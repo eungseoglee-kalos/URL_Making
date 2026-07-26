@@ -1,8 +1,11 @@
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { approveUser } from "./actions";
 
 export default async function AdminPage() {
+  await connection();
+
   const supabase = await createClient();
   const {
     data: { user },

@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
@@ -9,6 +10,8 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  await connection();
+
   const supabase = await createClient();
   const {
     data: { user },
