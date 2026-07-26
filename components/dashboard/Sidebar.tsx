@@ -9,8 +9,11 @@ const NAV_ITEMS = [
   { href: "/dashboard/settings", label: "설정" },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isAdmin }: { isAdmin?: boolean }) {
   const pathname = usePathname();
+  const items = isAdmin
+    ? [...NAV_ITEMS, { href: "/dashboard/admin", label: "관리자" }]
+    : NAV_ITEMS;
 
   return (
     <aside className="hidden w-60 shrink-0 border-r border-black/10 dark:border-white/10 md:flex md:flex-col">
@@ -18,7 +21,7 @@ export default function Sidebar() {
         URL Making
       </div>
       <nav className="flex flex-col gap-1 px-3">
-        {NAV_ITEMS.map((item) => {
+        {items.map((item) => {
           const active = pathname === item.href;
           return (
             <Link

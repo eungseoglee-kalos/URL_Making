@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { sendAdminSignupEmail } from "@/lib/email";
 
 export async function login(formData: FormData) {
   const supabase = await createClient();
@@ -20,9 +21,10 @@ export async function login(formData: FormData) {
 
 export async function signup(formData: FormData) {
   const supabase = await createClient();
+  const email = formData.get("email") as string;
 
   const { error } = await supabase.auth.signUp({
-    email: formData.get("email") as string,
+    email,
     password: formData.get("password") as string,
   });
 
@@ -30,8 +32,12 @@ export async function signup(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
   }
 
+  await sendAdminSignupEmail(email);
+
   redirect(
     "/login?message=" +
-      encodeURIComponent("가입 확인 이메일을 보냈습니다. 메일함을 확인해주세요."),
+      encodeURIComponent(
+        "가입 신청이 접수되었습니다. 이메일 인증 후 관리자 승인이 완료되면 이용하실 수 있습니다.",
+      ),
   );
 }
