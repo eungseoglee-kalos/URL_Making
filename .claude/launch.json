@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "naju-gateway-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "../naju-gateway", "run", "dev", "--", "-p", "3001"],
+      "port": 3001
     }
   ]
 }
