@@ -33,6 +33,10 @@ export default async function DashboardLayout({
       <Sidebar isAdmin={isAdmin} />
       <div className="flex min-h-full flex-1 flex-col">
         <Topbar email={user.email} />
+        <div className="bg-red-600 px-4 py-1 text-xs text-white">
+          DEBUG user=[{user.email}] admin_env=[{process.env.ADMIN_EMAIL}]
+          isAdmin={String(isAdmin)} profile_error={profile ? "none" : "yes"}
+        </div>
         <main className="flex-1 p-4 md:p-6">
           {isApproved ? children : <PendingApproval />}
         </main>
