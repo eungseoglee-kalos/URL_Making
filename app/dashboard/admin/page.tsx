@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { approveUser, uploadCoatingExcel } from "./actions";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export default async function AdminPage({
   searchParams,

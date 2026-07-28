@@ -66,7 +66,7 @@ export async function uploadCoatingExcel(formData: FormData) {
     );
   }
 
-  const chunkSize = 500;
+  const chunkSize = 1000;
   for (let i = 0; i < rows.length; i += chunkSize) {
     const chunk = rows.slice(i, i + chunkSize);
     const { error: insertError } = await supabase

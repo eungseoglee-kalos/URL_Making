@@ -4,8 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "대시보드" },
-  { href: "/dashboard/urls", label: "URL 목록" },
+  { href: "/", label: "대시보드" },
   { href: "/dashboard/settings", label: "설정" },
 ];
 
