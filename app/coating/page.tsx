@@ -141,26 +141,30 @@ export default function CoatingPage() {
   }, [filtered]);
 
   const queues = useMemo(() => {
-    const byLot = new Map<string, CoatingRecord>();
-    for (const r of partFiltered) {
-      const cur = byLot.get(r.coating_lot);
-      if (!cur || (r.round_no ?? 0) > (cur.round_no ?? 0)) {
-        byLot.set(r.coating_lot, r);
-      }
-    }
-    const latest = Array.from(byLot.values());
-    const rounds = [1, 2, 3, 4, 5];
+    const countAt = (round: number, pred: (v: string) => boolean) =>
+      partFiltered.filter((r) => r.round_no === round && pred(r.final_verdict))
+        .length;
+
+    const inspectionRounds = [1, 2, 3, 4, 5];
+    const coatingRounds = [2, 3, 4, 5];
+
     const inspectionWaiting: Record<number, number> = {};
-    const coatingWaiting: Record<number, number> = {};
-    for (const round of rounds) {
-      inspectionWaiting[round] = latest.filter(
-        (r) => r.round_no === round && isPending(r.final_verdict),
-      ).length;
-      coatingWaiting[round] = latest.filter(
-        (r) => r.round_no === round - 1 && isFail(r.final_verdict),
-      ).length;
+    for (const round of inspectionRounds) {
+      inspectionWaiting[round] = countAt(round, isPending);
     }
-    return { rounds, inspectionWaiting, coatingWaiting };
+
+    const coatingWaiting: Record<number, number> = {};
+    for (const round of coatingRounds) {
+      const prevFail = countAt(round - 1, isFail);
+      const curOk = countAt(round, isPass);
+      const curFail = countAt(round, isFail);
+      const curScrap = countAt(round, isScrap);
+      const curPending = countAt(round, isPending);
+      coatingWaiting[round] =
+        prevFail - curOk - curFail - curScrap - curPending;
+    }
+
+    return { inspectionRounds, coatingRounds, inspectionWaiting, coatingWaiting };
   }, [partFiltered]);
 
   const monthlyTrend = useMemo(() => {
@@ -316,7 +320,7 @@ export default function CoatingPage() {
         <div className="rounded-lg border border-black/10 p-4 dark:border-white/10">
           <p className="mb-2 text-sm font-semibold">검사 대기 (차수별)</p>
           <div className="grid grid-cols-5 gap-2 text-center">
-            {queues.rounds.map((r) => (
+            {queues.inspectionRounds.map((r) => (
               <div key={r}>
                 <p className="text-xs text-foreground/60">{r}차</p>
                 <p className="text-lg font-semibold">
@@ -328,8 +332,8 @@ export default function CoatingPage() {
         </div>
         <div className="rounded-lg border border-black/10 p-4 dark:border-white/10">
           <p className="mb-2 text-sm font-semibold">코팅 대기 (차수별)</p>
-          <div className="grid grid-cols-5 gap-2 text-center">
-            {queues.rounds.map((r) => (
+          <div className="grid grid-cols-4 gap-2 text-center">
+            {queues.coatingRounds.map((r) => (
               <div key={r}>
                 <p className="text-xs text-foreground/60">{r}차</p>
                 <p className="text-lg font-semibold">
