@@ -13,11 +13,6 @@ const DASHBOARDS = [
     title: "코팅현황",
     description: "나주공장 코팅 생산 및 검사 실적",
   },
-  {
-    href: "/dashboard",
-    title: "URL 등록",
-    description: "URL 단축/등록 관리 도구",
-  },
 ];
 
 export default async function Home() {

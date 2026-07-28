@@ -1,28 +1,28 @@
-import { connection } from "next/server";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { approveUser, uploadCoatingExcel } from "./actions";
+import ConfirmSubmitButton from "@/components/dashboard/ConfirmSubmitButton";
+import {
+  approveUser,
+  resetPassword,
+  deleteMember,
+  uploadCoatingExcel,
+} from "./actions";
 
-export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ coatingError?: string; coatingMessage?: string }>;
+  searchParams: Promise<{
+    coatingError?: string;
+    coatingMessage?: string;
+    adminError?: string;
+    adminMessage?: string;
+  }>;
 }) {
-  await connection();
-
-  const { coatingError, coatingMessage } = await searchParams;
+  const { coatingError, coatingMessage, adminError, adminMessage } =
+    await searchParams;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (user?.email !== process.env.ADMIN_EMAIL) {
-    redirect("/dashboard");
-  }
 
   const { data: profiles } = await supabase
     .from("profiles")
@@ -67,9 +67,26 @@ export default async function AdminPage({
         )}
       </div>
 
+      {(adminError || adminMessage) && (
+        <div className="rounded-lg border border-black/10 p-3 dark:border-white/10">
+          {adminError && (
+            <p className="text-sm text-red-600 dark:text-red-400">
+              {adminError}
+            </p>
+          )}
+          {adminMessage && (
+            <p className="text-sm text-green-600 dark:text-green-400">
+              {adminMessage}
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="rounded-lg border border-black/10 dark:border-white/10">
         <div className="border-b border-black/10 px-4 py-3 dark:border-white/10">
-          <h2 className="text-sm font-semibold">승인 대기 중 ({pending.length})</h2>
+          <h2 className="text-sm font-semibold">
+            승인 대기 중 ({pending.length})
+          </h2>
         </div>
         {pending.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-foreground/60">
@@ -106,8 +123,28 @@ export default async function AdminPage({
         ) : (
           <ul className="divide-y divide-black/10 dark:divide-white/10">
             {approved.map((p) => (
-              <li key={p.id} className="px-4 py-3 text-sm text-foreground/60">
-                {p.email}
+              <li
+                key={p.id}
+                className="flex items-center justify-between px-4 py-3 text-sm"
+              >
+                <span className="text-foreground/60">{p.email}</span>
+                <div className="flex items-center gap-2">
+                  <form action={resetPassword}>
+                    <input type="hidden" name="email" value={p.email} />
+                    <button className="rounded-md border border-black/10 px-3 py-1.5 text-xs font-medium dark:border-white/10">
+                      비밀번호 재설정
+                    </button>
+                  </form>
+                  <form action={deleteMember}>
+                    <input type="hidden" name="user_id" value={p.id} />
+                    <ConfirmSubmitButton
+                      confirmText={`${p.email} 계정을 완전히 삭제하시겠습니까? 되돌릴 수 없습니다.`}
+                      className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 dark:border-red-900 dark:text-red-400"
+                    >
+                      삭제
+                    </ConfirmSubmitButton>
+                  </form>
+                </div>
               </li>
             ))}
           </ul>

@@ -1,4 +1,4 @@
-import { signOut } from "@/app/dashboard/actions";
+import { signOut } from "@/app/login/actions";
 
 export default function Topbar({ email }: { email?: string }) {
   return (

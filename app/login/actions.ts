@@ -16,7 +16,8 @@ export async function login(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
   }
 
-  redirect("/dashboard");
+  const next = formData.get("next") as string | null;
+  redirect(next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
 }
 
 export async function signup(formData: FormData) {
@@ -40,4 +41,10 @@ export async function signup(formData: FormData) {
         "가입 신청이 접수되었습니다. 이메일 인증 후 관리자 승인이 완료되면 이용하실 수 있습니다.",
       ),
   );
+}
+
+export async function signOut() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/login");
 }
