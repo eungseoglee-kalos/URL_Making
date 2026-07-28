@@ -18,7 +18,7 @@ export default function Sidebar({ isAdmin }: { isAdmin?: boolean }) {
   return (
     <aside className="hidden w-60 shrink-0 border-r border-black/10 dark:border-white/10 md:flex md:flex-col">
       <div className="flex h-16 items-center px-6 text-lg font-semibold">
-        URL Making
+        KBM Naju Dashboard
       </div>
       <nav className="flex flex-col gap-1 px-3">
         {items.map((item) => {

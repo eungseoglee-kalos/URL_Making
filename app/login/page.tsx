@@ -11,7 +11,7 @@ export default async function LoginPage({
     <div className="flex min-h-full flex-1 items-center justify-center p-6">
       <div className="w-full max-w-sm">
         <h1 className="mb-6 text-center text-lg font-semibold">
-          URL Making 로그인
+          KBM Naju Dashboard 로그인
         </h1>
 
         <form className="flex flex-col gap-3">

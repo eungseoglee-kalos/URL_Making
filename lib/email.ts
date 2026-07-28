@@ -20,7 +20,7 @@ export async function sendAdminSignupEmail(newUserEmail: string) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "URL Making <onboarding@resend.dev>",
+      from: "KBM Naju Dashboard <onboarding@resend.dev>",
       to: adminEmail,
       subject: "새 가입 승인 요청",
       html: `<p>${newUserEmail} 님이 가입 신청했습니다.</p><p><a href="${appUrl}/dashboard/admin">여기서 승인하기</a></p>`,

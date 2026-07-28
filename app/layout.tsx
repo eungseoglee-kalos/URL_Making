@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "URL Making",
-  description: "URL 단축 서비스 대시보드",
+  title: "KBM Naju Dashboard",
+  description: "나주공장 생산 및 품질실적 대시보드",
 };
 
 export default function RootLayout({
