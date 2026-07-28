@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { approveUser } from "./actions";
 
+export const runtime = "nodejs";
+
 export default async function AdminPage() {
   await connection();
 

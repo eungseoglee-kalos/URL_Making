@@ -5,6 +5,8 @@ import Topbar from "@/components/dashboard/Topbar";
 import PendingApproval from "@/components/dashboard/PendingApproval";
 import { createClient } from "@/lib/supabase/server";
 
+export const runtime = "nodejs";
+
 export default async function DashboardLayout({
   children,
 }: {
