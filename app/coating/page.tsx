@@ -23,7 +23,7 @@ type CoatingRecord = {
   coating_lot: string;
   coating_date: string;
   part_number: string;
-  serial_no: number | null;
+  serial_no: string | null;
   coating_round: string;
   round_no: number | null;
   position: string | null;
