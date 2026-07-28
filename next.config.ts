@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
       allowedOrigins: ["naju.kbmtt.com"],
+      bodySizeLimit: "10mb",
     },
   },
 };

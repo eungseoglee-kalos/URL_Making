@@ -1,12 +1,18 @@
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { approveUser } from "./actions";
+import { approveUser, uploadCoatingExcel } from "./actions";
 
 export const runtime = "nodejs";
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ coatingError?: string; coatingMessage?: string }>;
+}) {
   await connection();
+
+  const { coatingError, coatingMessage } = await searchParams;
 
   const supabase = await createClient();
   const {
@@ -27,6 +33,39 @@ export default async function AdminPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="rounded-lg border border-black/10 p-4 dark:border-white/10">
+        <h2 className="mb-1 text-sm font-semibold">코팅현황 데이터 업로드</h2>
+        <p className="mb-3 text-xs text-foreground/60">
+          엑셀 파일(&quot;코팅현황&quot; 시트 포함)을 올리면 기존 데이터를
+          전부 교체합니다.
+        </p>
+        <form
+          action={uploadCoatingExcel}
+          className="flex flex-col gap-2 sm:flex-row sm:items-center"
+        >
+          <input
+            type="file"
+            name="excel"
+            accept=".xlsx,.xls"
+            required
+            className="text-sm"
+          />
+          <button className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background">
+            업로드
+          </button>
+        </form>
+        {coatingError && (
+          <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+            {coatingError}
+          </p>
+        )}
+        {coatingMessage && (
+          <p className="mt-2 text-sm text-green-600 dark:text-green-400">
+            {coatingMessage}
+          </p>
+        )}
+      </div>
+
       <div className="rounded-lg border border-black/10 dark:border-white/10">
         <div className="border-b border-black/10 px-4 py-3 dark:border-white/10">
           <h2 className="text-sm font-semibold">승인 대기 중 ({pending.length})</h2>
