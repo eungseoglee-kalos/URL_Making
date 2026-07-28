@@ -1,11 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import ConfirmSubmitButton from "@/components/dashboard/ConfirmSubmitButton";
-import {
-  approveUser,
-  resetPassword,
-  deleteMember,
-  uploadCoatingExcel,
-} from "./actions";
+import { approveUser, deleteMember, uploadCoatingExcel } from "./actions";
 
 export const maxDuration = 60;
 
@@ -115,6 +110,10 @@ export default async function AdminPage({
       <div className="rounded-lg border border-black/10 dark:border-white/10">
         <div className="border-b border-black/10 px-4 py-3 dark:border-white/10">
           <h2 className="text-sm font-semibold">승인됨 ({approved.length})</h2>
+          <p className="mt-1 text-xs text-foreground/60">
+            비밀번호를 잊은 사용자는 계정을 삭제한 뒤 다시 가입하도록
+            안내해주세요.
+          </p>
         </div>
         {approved.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-foreground/60">
@@ -129,12 +128,6 @@ export default async function AdminPage({
               >
                 <span className="text-foreground/60">{p.email}</span>
                 <div className="flex items-center gap-2">
-                  <form action={resetPassword}>
-                    <input type="hidden" name="email" value={p.email} />
-                    <button className="rounded-md border border-black/10 px-3 py-1.5 text-xs font-medium dark:border-white/10">
-                      비밀번호 재설정
-                    </button>
-                  </form>
                   <form action={deleteMember}>
                     <input type="hidden" name="user_id" value={p.id} />
                     <ConfirmSubmitButton

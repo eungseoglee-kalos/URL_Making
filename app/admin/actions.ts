@@ -31,25 +31,6 @@ export async function approveUser(formData: FormData) {
   revalidatePath("/admin");
 }
 
-export async function resetPassword(formData: FormData) {
-  const supabase = await requireAdmin();
-  const email = formData.get("email") as string;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://naju.kbmtt.com";
-
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${appUrl}/login`,
-  });
-
-  if (error) {
-    redirect("/admin?adminError=" + encodeURIComponent(error.message));
-  }
-
-  redirect(
-    "/admin?adminMessage=" +
-      encodeURIComponent(`${email}로 비밀번호 재설정 메일을 보냈습니다.`),
-  );
-}
-
 export async function deleteMember(formData: FormData) {
   await requireAdmin();
   const userId = formData.get("user_id") as string;
