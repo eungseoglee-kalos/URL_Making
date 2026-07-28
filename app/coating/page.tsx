@@ -15,6 +15,7 @@ import {
   PieChart,
   Pie,
   Cell,
+  LabelList,
 } from "recharts";
 import { createClient } from "@/lib/supabase/client";
 
@@ -61,9 +62,21 @@ function pct(v: number | null) {
 function cellColor(v: number | null) {
   if (v === null) return "";
   if (v < 0.7) return "bg-red-500 text-white";
-  if (v < 0.85) return "bg-blue-100";
-  if (v < 0.95) return "bg-blue-300";
+  if (v < 0.85) return "bg-blue-100 text-black";
+  if (v < 0.95) return "bg-blue-300 text-black";
   return "bg-blue-500 text-white";
+}
+
+function useIsDark() {
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    setIsDark(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDark(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return isDark;
 }
 
 async function fetchAllCoatingRecords(): Promise<CoatingRecord[]> {
@@ -98,6 +111,9 @@ export default function CoatingPage() {
   const [year, setYear] = useState<string>("all");
   const [month, setMonth] = useState<string>("all");
   const [selectedParts, setSelectedParts] = useState<Set<string>>(new Set());
+  const isDark = useIsDark();
+  const axisColor = isDark ? "#d4d4d4" : "#404040";
+  const labelColor = isDark ? "#f5f5f5" : "#171717";
 
   useEffect(() => {
     fetchAllCoatingRecords()
@@ -260,7 +276,7 @@ export default function CoatingPage() {
           <select
             value={year}
             onChange={(e) => setYear(e.target.value)}
-            className="rounded-md border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/10"
+            className="rounded-md border border-black/10 bg-white px-2 py-1.5 text-sm text-black dark:border-white/10 dark:bg-neutral-800 dark:text-white"
           >
             <option value="all">전체</option>
             {years.map((y) => (
@@ -275,7 +291,7 @@ export default function CoatingPage() {
           <select
             value={month}
             onChange={(e) => setMonth(e.target.value)}
-            className="rounded-md border border-black/10 bg-transparent px-2 py-1.5 text-sm dark:border-white/10"
+            className="rounded-md border border-black/10 bg-white px-2 py-1.5 text-sm text-black dark:border-white/10 dark:bg-neutral-800 dark:text-white"
           >
             <option value="all">전체</option>
             {Array.from({ length: 12 }, (_, i) =>
@@ -310,10 +326,10 @@ export default function CoatingPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <KpiCard label="투입량" value={kpi.total} />
-        <KpiCard label="합격" value={kpi.pass} />
-        <KpiCard label="불합격" value={kpi.fail} />
-        <KpiCard label="폐기" value={kpi.scrap} />
+        <KpiCard label="투입량" value={kpi.total} color="blue" />
+        <KpiCard label="합격" value={kpi.pass} color="green" />
+        <KpiCard label="불합격" value={kpi.fail} color="red" />
+        <KpiCard label="폐기" value={kpi.scrap} color="amber" />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -352,22 +368,24 @@ export default function CoatingPage() {
         <ResponsiveContainer width="100%" height={300}>
           <ComposedChart data={monthlyTrend}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-            <XAxis dataKey="month" fontSize={12} />
-            <YAxis yAxisId="left" fontSize={12} />
+            <XAxis dataKey="month" tick={{ fill: axisColor, fontSize: 12 }} />
+            <YAxis yAxisId="left" tick={{ fill: axisColor, fontSize: 12 }} />
             <YAxis
               yAxisId="right"
               orientation="right"
               domain={[0, 100]}
-              fontSize={12}
+              tick={{ fill: axisColor, fontSize: 12 }}
             />
             <Tooltip />
-            <Legend />
+            <Legend wrapperStyle={{ color: axisColor, fontSize: 12 }} />
             <Bar
               yAxisId="left"
               dataKey="total"
               name="생산수량"
               fill="#60a5fa"
-            />
+            >
+              <LabelList dataKey="total" position="top" fill={labelColor} fontSize={11} />
+            </Bar>
             <Line
               yAxisId="right"
               dataKey="passRatePct"
@@ -393,10 +411,18 @@ export default function CoatingPage() {
           <p className="mb-4 text-sm font-semibold">차수별 합격률</p>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={roundRate}>
-              <XAxis dataKey="round" fontSize={12} />
-              <YAxis domain={[0, 100]} fontSize={12} />
+              <XAxis dataKey="round" tick={{ fill: axisColor, fontSize: 12 }} />
+              <YAxis domain={[0, 100]} tick={{ fill: axisColor, fontSize: 12 }} />
               <Tooltip />
-              <Bar dataKey="ratePct" name="합격률(%)" fill="#2563eb" />
+              <Bar dataKey="ratePct" name="합격률(%)" fill="#2563eb">
+                <LabelList
+                  dataKey="ratePct"
+                  position="top"
+                  fill={labelColor}
+                  fontSize={12}
+                  formatter={(v) => `${v}%`}
+                />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -410,7 +436,27 @@ export default function CoatingPage() {
                 dataKey="value"
                 nameKey="name"
                 outerRadius={80}
-                label={(d) => `${d.name} ${d.value}%`}
+                label={(props) => {
+                  const { x, y, cx, name, value } = props as {
+                    x: number;
+                    y: number;
+                    cx: number;
+                    name: string;
+                    value: number;
+                  };
+                  return (
+                    <text
+                      x={x}
+                      y={y}
+                      fill={labelColor}
+                      fontSize={12}
+                      textAnchor={x > cx ? "start" : "end"}
+                      dominantBaseline="central"
+                    >
+                      {`${name} ${value}%`}
+                    </text>
+                  );
+                }}
               >
                 {positionRate.map((_, i) => (
                   <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
@@ -425,15 +471,27 @@ export default function CoatingPage() {
           <p className="mb-4 text-sm font-semibold">품번별 합격률</p>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={partRate} layout="vertical">
-              <XAxis type="number" domain={[0, 100]} fontSize={12} />
+              <XAxis
+                type="number"
+                domain={[0, 100]}
+                tick={{ fill: axisColor, fontSize: 12 }}
+              />
               <YAxis
                 type="category"
                 dataKey="part"
                 width={100}
-                fontSize={11}
+                tick={{ fill: axisColor, fontSize: 11 }}
               />
               <Tooltip />
-              <Bar dataKey="ratePct" name="합격률(%)" fill="#2563eb" />
+              <Bar dataKey="ratePct" name="합격률(%)" fill="#2563eb">
+                <LabelList
+                  dataKey="ratePct"
+                  position="right"
+                  fill={labelColor}
+                  fontSize={11}
+                  formatter={(v) => `${v}%`}
+                />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -485,11 +543,37 @@ export default function CoatingPage() {
   );
 }
 
-function KpiCard({ label, value }: { label: string; value: number }) {
+const KPI_COLOR_CLASSES = {
+  blue: "border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950",
+  green:
+    "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950",
+  red: "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950",
+  amber:
+    "border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950",
+} as const;
+
+const KPI_VALUE_COLOR_CLASSES = {
+  blue: "text-blue-700 dark:text-blue-300",
+  green: "text-green-700 dark:text-green-300",
+  red: "text-red-700 dark:text-red-300",
+  amber: "text-amber-700 dark:text-amber-300",
+} as const;
+
+function KpiCard({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: number;
+  color: keyof typeof KPI_COLOR_CLASSES;
+}) {
   return (
-    <div className="rounded-lg border border-black/10 p-4 dark:border-white/10">
+    <div className={`rounded-lg border p-4 ${KPI_COLOR_CLASSES[color]}`}>
       <p className="text-sm text-foreground/60">{label}</p>
-      <p className="mt-2 text-2xl font-semibold">{value}</p>
+      <p className={`mt-2 text-2xl font-semibold ${KPI_VALUE_COLOR_CLASSES[color]}`}>
+        {value}
+      </p>
     </div>
   );
 }
