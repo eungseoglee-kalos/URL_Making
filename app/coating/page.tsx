@@ -333,7 +333,9 @@ export default function CoatingPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border border-black/10 p-4 dark:border-white/10">
+        <div
+          className={`rounded-lg border p-4 ${KPI_COLOR_CLASSES.indigo}`}
+        >
           <p className="mb-2 text-sm font-semibold">검사 대기 (차수별)</p>
           <div className="grid grid-cols-5 gap-2 text-center">
             {queues.inspectionRounds.map((r) => (
@@ -346,7 +348,7 @@ export default function CoatingPage() {
             ))}
           </div>
         </div>
-        <div className="rounded-lg border border-black/10 p-4 dark:border-white/10">
+        <div className={`rounded-lg border p-4 ${KPI_COLOR_CLASSES.teal}`}>
           <p className="mb-2 text-sm font-semibold">코팅 대기 (차수별)</p>
           <div className="grid grid-cols-4 gap-2 text-center">
             {queues.coatingRounds.map((r) => (
@@ -550,6 +552,9 @@ const KPI_COLOR_CLASSES = {
   red: "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950",
   amber:
     "border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950",
+  indigo:
+    "border-indigo-200 bg-indigo-50 dark:border-indigo-900 dark:bg-indigo-950",
+  teal: "border-teal-200 bg-teal-50 dark:border-teal-900 dark:bg-teal-950",
 } as const;
 
 const KPI_VALUE_COLOR_CLASSES = {
@@ -557,6 +562,8 @@ const KPI_VALUE_COLOR_CLASSES = {
   green: "text-green-700 dark:text-green-300",
   red: "text-red-700 dark:text-red-300",
   amber: "text-amber-700 dark:text-amber-300",
+  indigo: "text-indigo-700 dark:text-indigo-300",
+  teal: "text-teal-700 dark:text-teal-300",
 } as const;
 
 function KpiCard({
@@ -569,9 +576,13 @@ function KpiCard({
   color: keyof typeof KPI_COLOR_CLASSES;
 }) {
   return (
-    <div className={`rounded-lg border p-4 ${KPI_COLOR_CLASSES[color]}`}>
+    <div
+      className={`rounded-lg border p-4 text-center ${KPI_COLOR_CLASSES[color]}`}
+    >
       <p className="text-sm text-foreground/60">{label}</p>
-      <p className={`mt-2 text-2xl font-semibold ${KPI_VALUE_COLOR_CLASSES[color]}`}>
+      <p
+        className={`mt-2 text-2xl font-semibold ${KPI_VALUE_COLOR_CLASSES[color]}`}
+      >
         {value}
       </p>
     </div>
