@@ -27,10 +27,14 @@ $ErrorActionPreference = "Stop"
 $SourceFolder = "C:\Users\Admin\Downloads\Telegram Desktop"
 $Endpoint     = "https://naju.kbmtt.com/api/ingest"
 
+# Pattern 은 와일드카드도 되고 정확한 파일명도 된다. 버전이 올라가는 파일은
+# _V* 로 두어 최신 것을 잡고, 파일명이 고정된 것은 그대로 적는다. 어느 쪽이든
+# 맞는 파일이 없으면 그 항목만 실패로 남고 나머지는 정상 전송된다.
 $Sources = @(
     @{ Label = "코팅현황";           Pattern = "히터코일검사현황_Ver*.xlsx" }
     @{ Label = "생산계획 대비 실적"; Pattern = "생산계획대비 실적_V*.xlsx" }
     @{ Label = "히터코일/메시 출하"; Pattern = "히터코일 출하현황_V*.xlsx" }
+    @{ Label = "진공증착 생산실적";  Pattern = "VM 월별 생산실적 보고_V23.xlsx" }
 )
 # -------------------------------------------------------------------------
 
