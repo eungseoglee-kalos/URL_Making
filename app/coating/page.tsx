@@ -18,6 +18,7 @@ import {
   LabelList,
 } from "recharts";
 import { createClient } from "@/lib/supabase/client";
+import { useIsDark } from "@/lib/use-is-dark";
 
 type CoatingRecord = {
   id: number;
@@ -65,18 +66,6 @@ function cellColor(v: number | null) {
   if (v < 0.85) return "bg-blue-100 text-black";
   if (v < 0.95) return "bg-blue-300 text-black";
   return "bg-blue-500 text-white";
-}
-
-function useIsDark() {
-  const [isDark, setIsDark] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    setIsDark(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsDark(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
-  return isDark;
 }
 
 async function fetchAllCoatingRecords(): Promise<CoatingRecord[]> {
