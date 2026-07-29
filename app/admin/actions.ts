@@ -9,6 +9,12 @@ import {
   parseProductionPlanExcel,
   type ProductionPlanRow,
 } from "@/lib/production-plan-import";
+import {
+  parseHeaterCoilExcel,
+  parseMeshExcel,
+  type HeaterCoilRow,
+  type MeshRow,
+} from "@/lib/shipment-import";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -21,6 +27,49 @@ async function requireAdmin() {
   }
 
   return supabase;
+}
+
+type AdminClient = Awaited<ReturnType<typeof createClient>>;
+
+// Wipes a table and re-inserts everything. Tens of thousands of rows are too
+// slow one chunk at a time for the 60s budget, so chunks go up a few at once.
+// Errors bail out through redirect(), which throws -- nothing after it runs.
+async function replaceTableRows(
+  supabase: AdminClient,
+  table: string,
+  rows: object[],
+  errorKey: string,
+) {
+  const fail = (message: string) => {
+    redirect(`/admin?${errorKey}=` + encodeURIComponent(message));
+  };
+
+  const { error: deleteError } = await supabase
+    .from(table)
+    .delete()
+    .gt("id", 0);
+
+  if (deleteError) {
+    fail("기존 데이터 삭제 실패: " + deleteError.message);
+  }
+
+  const chunkSize = 1000;
+  const concurrency = 4;
+  const chunks: object[][] = [];
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    chunks.push(rows.slice(i, i + chunkSize));
+  }
+
+  for (let i = 0; i < chunks.length; i += concurrency) {
+    const group = chunks.slice(i, i + concurrency);
+    const results = await Promise.all(
+      group.map((chunk) => supabase.from(table).insert(chunk)),
+    );
+    const failed = results.find((r) => r.error);
+    if (failed?.error) {
+      fail(`${i * chunkSize}건째 부근 업로드 실패: ${failed.error.message}`);
+    }
+  }
 }
 
 export async function approveUser(formData: FormData) {
@@ -143,48 +192,62 @@ export async function uploadProductionPlanExcel(formData: FormData) {
     );
   }
 
-  const { error: deleteError } = await supabase
-    .from("production_plan_records")
-    .delete()
-    .gt("id", 0);
-
-  if (deleteError) {
-    redirect(
-      "/admin?planError=" +
-        encodeURIComponent("기존 데이터 삭제 실패: " + deleteError.message),
-    );
-  }
-
-  // ~34k rows would take too long one chunk at a time for the 60s budget,
-  // so chunks go up a few at a time.
-  const chunkSize = 1000;
-  const concurrency = 4;
-  const chunks: ProductionPlanRow[][] = [];
-  for (let i = 0; i < rows.length; i += chunkSize) {
-    chunks.push(rows.slice(i, i + chunkSize));
-  }
-
-  for (let i = 0; i < chunks.length; i += concurrency) {
-    const group = chunks.slice(i, i + concurrency);
-    const results = await Promise.all(
-      group.map((chunk) =>
-        supabase.from("production_plan_records").insert(chunk),
-      ),
-    );
-    const failed = results.find((r) => r.error);
-    if (failed?.error) {
-      redirect(
-        "/admin?planError=" +
-          encodeURIComponent(
-            `${i * chunkSize}건째 부근 업로드 실패: ${failed.error.message}`,
-          ),
-      );
-    }
-  }
+  await replaceTableRows(supabase, "production_plan_records", rows, "planError");
 
   revalidatePath("/production-plan");
   redirect(
     "/admin?planMessage=" +
       encodeURIComponent(`${rows.length.toLocaleString()}건 업로드 완료`),
+  );
+}
+
+// 히터코일과 메시는 한 엑셀 파일의 두 시트라 업로드도 한 번에 받아
+// 두 테이블을 함께 교체한다.
+export async function uploadShipmentExcel(formData: FormData) {
+  const supabase = await requireAdmin();
+
+  const file = formData.get("excel");
+  if (!(file instanceof File) || file.size === 0) {
+    redirect(
+      "/admin?shipmentError=" + encodeURIComponent("파일을 선택해주세요."),
+    );
+  }
+
+  const buffer = await file.arrayBuffer();
+
+  let heaterCoil: HeaterCoilRow[];
+  let mesh: MeshRow[];
+  try {
+    heaterCoil = parseHeaterCoilExcel(buffer);
+    mesh = parseMeshExcel(buffer);
+  } catch (e) {
+    redirect(
+      "/admin?shipmentError=" +
+        encodeURIComponent(e instanceof Error ? e.message : "파싱 실패"),
+    );
+  }
+
+  if (heaterCoil.length === 0 && mesh.length === 0) {
+    redirect(
+      "/admin?shipmentError=" +
+        encodeURIComponent("엑셀에서 데이터를 찾을 수 없습니다."),
+    );
+  }
+
+  await replaceTableRows(
+    supabase,
+    "heater_coil_shipments",
+    heaterCoil,
+    "shipmentError",
+  );
+  await replaceTableRows(supabase, "mesh_shipments", mesh, "shipmentError");
+
+  revalidatePath("/heater-coil");
+  revalidatePath("/mesh");
+  redirect(
+    "/admin?shipmentMessage=" +
+      encodeURIComponent(
+        `히터코일 ${heaterCoil.length.toLocaleString()}건, 메시 ${mesh.length.toLocaleString()}건 업로드 완료`,
+      ),
   );
 }

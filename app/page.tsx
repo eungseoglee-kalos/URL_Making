@@ -18,6 +18,16 @@ const DASHBOARDS = [
     title: "생산계획 대비 실적",
     description: "부서·공정별 생산계획 달성률 및 미달 유형 분석",
   },
+  {
+    href: "/heater-coil",
+    title: "히터코일 출하현황",
+    description: "히터코일 월별 출하량, 코팅업체별 실적 및 수주잔량",
+  },
+  {
+    href: "/mesh",
+    title: "메시 출하현황",
+    description: "메시 월별 출하량, 가공처별 실적 및 수주잔량",
+  },
   // add future dashboards here -- each one automatically gets the next
   // color in DASHBOARD_COLOR_CLASSES below.
 ];

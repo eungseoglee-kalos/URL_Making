@@ -5,6 +5,7 @@ import {
   deleteMember,
   uploadCoatingExcel,
   uploadProductionPlanExcel,
+  uploadShipmentExcel,
 } from "./actions";
 
 export const maxDuration = 60;
@@ -17,6 +18,8 @@ export default async function AdminPage({
     coatingMessage?: string;
     planError?: string;
     planMessage?: string;
+    shipmentError?: string;
+    shipmentMessage?: string;
     adminError?: string;
     adminMessage?: string;
   }>;
@@ -26,6 +29,8 @@ export default async function AdminPage({
     coatingMessage,
     planError,
     planMessage,
+    shipmentError,
+    shipmentMessage,
     adminError,
     adminMessage,
   } = await searchParams;
@@ -106,6 +111,41 @@ export default async function AdminPage({
         {planMessage && (
           <p className="mt-2 text-sm text-green-600 dark:text-green-400">
             {planMessage}
+          </p>
+        )}
+      </div>
+
+      <div className="rounded-lg border border-black/10 p-4 dark:border-white/10">
+        <h2 className="mb-1 text-sm font-semibold">
+          히터코일 · 메시 출하현황 데이터 업로드
+        </h2>
+        <p className="mb-3 text-xs text-foreground/60">
+          엑셀 파일(&quot;히터코일출하data&quot;, &quot;메시출하data&quot; 시트
+          포함)을 올리면 두 대시보드의 기존 데이터를 함께 교체합니다.
+        </p>
+        <form
+          action={uploadShipmentExcel}
+          className="flex flex-col gap-2 sm:flex-row sm:items-center"
+        >
+          <input
+            type="file"
+            name="excel"
+            accept=".xlsx,.xls"
+            required
+            className="text-sm"
+          />
+          <button className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background">
+            업로드
+          </button>
+        </form>
+        {shipmentError && (
+          <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+            {shipmentError}
+          </p>
+        )}
+        {shipmentMessage && (
+          <p className="mt-2 text-sm text-green-600 dark:text-green-400">
+            {shipmentMessage}
           </p>
         )}
       </div>
