@@ -19,6 +19,7 @@ import {
 } from "recharts";
 import { createClient } from "@/lib/supabase/client";
 import { useIsDark } from "@/lib/use-is-dark";
+import LastSyncBadge from "@/components/dashboard/LastSyncBadge";
 
 type CoatingRecord = {
   id: number;
@@ -257,6 +258,11 @@ export default function CoatingPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h1 className="text-lg font-semibold">코팅현황</h1>
+        <LastSyncBadge table="coating_records" />
+      </div>
+
       <div className="flex flex-wrap items-end gap-4">
         <div>
           <label className="mb-1 block text-xs text-foreground/60">

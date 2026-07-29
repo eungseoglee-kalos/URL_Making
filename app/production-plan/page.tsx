@@ -24,6 +24,7 @@ import {
   FAIL_TYPE_COLORS,
   type FailTypeMode,
 } from "@/lib/fail-type";
+import LastSyncBadge from "@/components/dashboard/LastSyncBadge";
 
 type PlanRecord = {
   record_date: string;
@@ -288,11 +289,14 @@ export default function ProductionPlanPage() {
             달성 기준: 계획 수량 대비 ±10% 이내
           </p>
         </div>
-        {latestDate && (
-          <p className="text-xs text-foreground/60">
-            최종 실적일 {latestDate}
-          </p>
-        )}
+        <div className="text-right">
+          {latestDate && (
+            <p className="text-xs text-foreground/60">
+              최종 실적일 {latestDate}
+            </p>
+          )}
+          <LastSyncBadge table="production_plan_records" />
+        </div>
       </div>
 
       <div className="flex flex-wrap items-start gap-x-6 gap-y-4">

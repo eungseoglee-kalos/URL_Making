@@ -19,6 +19,7 @@ import {
 } from "recharts";
 import { createClient } from "@/lib/supabase/client";
 import { useIsDark } from "@/lib/use-is-dark";
+import LastSyncBadge from "./LastSyncBadge";
 
 type ShipmentRecord = {
   ship_date: string;
@@ -322,7 +323,10 @@ export default function ShipmentDashboard({
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-lg font-semibold">{title}</h1>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h1 className="text-lg font-semibold">{title}</h1>
+        <LastSyncBadge table={table} />
+      </div>
 
       <div className="flex flex-wrap items-start gap-x-6 gap-y-4">
         <div>
