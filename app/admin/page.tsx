@@ -1,6 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import ConfirmSubmitButton from "@/components/dashboard/ConfirmSubmitButton";
-import { approveUser, deleteMember, uploadCoatingExcel } from "./actions";
+import {
+  approveUser,
+  deleteMember,
+  uploadCoatingExcel,
+  uploadProductionPlanExcel,
+} from "./actions";
 
 export const maxDuration = 60;
 
@@ -10,12 +15,20 @@ export default async function AdminPage({
   searchParams: Promise<{
     coatingError?: string;
     coatingMessage?: string;
+    planError?: string;
+    planMessage?: string;
     adminError?: string;
     adminMessage?: string;
   }>;
 }) {
-  const { coatingError, coatingMessage, adminError, adminMessage } =
-    await searchParams;
+  const {
+    coatingError,
+    coatingMessage,
+    planError,
+    planMessage,
+    adminError,
+    adminMessage,
+  } = await searchParams;
 
   const supabase = await createClient();
 
@@ -58,6 +71,41 @@ export default async function AdminPage({
         {coatingMessage && (
           <p className="mt-2 text-sm text-green-600 dark:text-green-400">
             {coatingMessage}
+          </p>
+        )}
+      </div>
+
+      <div className="rounded-lg border border-black/10 p-4 dark:border-white/10">
+        <h2 className="mb-1 text-sm font-semibold">
+          생산계획 대비 실적 데이터 업로드
+        </h2>
+        <p className="mb-3 text-xs text-foreground/60">
+          엑셀 파일(&quot;계획대비실적data&quot; 시트 포함)을 올리면 기존
+          데이터를 전부 교체합니다.
+        </p>
+        <form
+          action={uploadProductionPlanExcel}
+          className="flex flex-col gap-2 sm:flex-row sm:items-center"
+        >
+          <input
+            type="file"
+            name="excel"
+            accept=".xlsx,.xls"
+            required
+            className="text-sm"
+          />
+          <button className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background">
+            업로드
+          </button>
+        </form>
+        {planError && (
+          <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+            {planError}
+          </p>
+        )}
+        {planMessage && (
+          <p className="mt-2 text-sm text-green-600 dark:text-green-400">
+            {planMessage}
           </p>
         )}
       </div>

@@ -5,6 +5,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { parseCoatingExcel, type CoatingRow } from "@/lib/coating-import";
+import {
+  parseProductionPlanExcel,
+  type ProductionPlanRow,
+} from "@/lib/production-plan-import";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -109,5 +113,78 @@ export async function uploadCoatingExcel(formData: FormData) {
   redirect(
     "/admin?coatingMessage=" +
       encodeURIComponent(`${rows.length}건 업로드 완료`),
+  );
+}
+
+export async function uploadProductionPlanExcel(formData: FormData) {
+  const supabase = await requireAdmin();
+
+  const file = formData.get("excel");
+  if (!(file instanceof File) || file.size === 0) {
+    redirect("/admin?planError=" + encodeURIComponent("파일을 선택해주세요."));
+  }
+
+  const buffer = await file.arrayBuffer();
+
+  let rows: ProductionPlanRow[];
+  try {
+    rows = parseProductionPlanExcel(buffer);
+  } catch (e) {
+    redirect(
+      "/admin?planError=" +
+        encodeURIComponent(e instanceof Error ? e.message : "파싱 실패"),
+    );
+  }
+
+  if (rows.length === 0) {
+    redirect(
+      "/admin?planError=" +
+        encodeURIComponent("엑셀에서 데이터를 찾을 수 없습니다."),
+    );
+  }
+
+  const { error: deleteError } = await supabase
+    .from("production_plan_records")
+    .delete()
+    .gt("id", 0);
+
+  if (deleteError) {
+    redirect(
+      "/admin?planError=" +
+        encodeURIComponent("기존 데이터 삭제 실패: " + deleteError.message),
+    );
+  }
+
+  // ~34k rows would take too long one chunk at a time for the 60s budget,
+  // so chunks go up a few at a time.
+  const chunkSize = 1000;
+  const concurrency = 4;
+  const chunks: ProductionPlanRow[][] = [];
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    chunks.push(rows.slice(i, i + chunkSize));
+  }
+
+  for (let i = 0; i < chunks.length; i += concurrency) {
+    const group = chunks.slice(i, i + concurrency);
+    const results = await Promise.all(
+      group.map((chunk) =>
+        supabase.from("production_plan_records").insert(chunk),
+      ),
+    );
+    const failed = results.find((r) => r.error);
+    if (failed?.error) {
+      redirect(
+        "/admin?planError=" +
+          encodeURIComponent(
+            `${i * chunkSize}건째 부근 업로드 실패: ${failed.error.message}`,
+          ),
+      );
+    }
+  }
+
+  revalidatePath("/production-plan");
+  redirect(
+    "/admin?planMessage=" +
+      encodeURIComponent(`${rows.length.toLocaleString()}건 업로드 완료`),
   );
 }

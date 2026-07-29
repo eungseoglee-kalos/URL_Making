@@ -13,6 +13,11 @@ const DASHBOARDS = [
     title: "코팅현황",
     description: "나주공장 코팅 생산 및 검사 실적",
   },
+  {
+    href: "/production-plan",
+    title: "생산계획 대비 실적",
+    description: "부서·공정별 생산계획 달성률 및 미달 유형 분석",
+  },
   // add future dashboards here -- each one automatically gets the next
   // color in DASHBOARD_COLOR_CLASSES below.
 ];
