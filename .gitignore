@@ -40,6 +40,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# upload script secrets and logs (the script itself is tracked)
+/scripts/token.txt
+/scripts/*.log
+
 # agent tooling runtime state (.claude/launch.json stays tracked, and
 # /.omc/skills is the one committable thing under /.omc)
 /.omc/*
