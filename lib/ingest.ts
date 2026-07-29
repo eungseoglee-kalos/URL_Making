@@ -11,6 +11,12 @@ import {
   HEATER_COIL_SHEET,
   MESH_SHEET,
 } from "./shipment-import";
+import {
+  parseVmShipments,
+  parseVmBacklog,
+  VM_SHIPMENT_SHEET,
+  VM_BACKLOG_SHEET,
+} from "./vm-import";
 
 /**
  * 자동 취합이 기존 데이터를 날리지 않게 하는 하한선. 엑셀이 열려 있어 잠겼거나
@@ -27,6 +33,11 @@ export type IngestTarget = {
   /** 취합 후 캐시를 무효화할 경로. */
   path: string;
   parse: (buffer: ArrayBuffer) => object[];
+  /**
+   * 급감 가드의 기준. 스냅샷처럼 행 수가 원래 크게 출렁이는 표는 낮춰 잡거나
+   * 0 으로 꺼야 정상 데이터가 막히지 않는다.
+   */
+  minRowRatio?: number;
 };
 
 export const INGEST_TARGETS: IngestTarget[] = [
@@ -57,6 +68,23 @@ export const INGEST_TARGETS: IngestTarget[] = [
     label: "메시 출하현황",
     path: "/mesh",
     parse: parseMeshExcel,
+  },
+  {
+    sheet: VM_SHIPMENT_SHEET,
+    table: "vm_shipments",
+    label: "진공증착 출하",
+    path: "/vm-coil",
+    parse: parseVmShipments,
+  },
+  {
+    sheet: VM_BACKLOG_SHEET,
+    table: "vm_backlog",
+    label: "진공증착 수주잔량",
+    path: "/vm-coil",
+    parse: parseVmBacklog,
+    // 당월 수주 잔량은 그 달에 남은 주문만 담은 스냅샷이라 50여 행에서
+    // 한 자리로 줄어드는 게 정상이다. 급감 가드를 걸면 멀쩡한 갱신이 막힌다.
+    minRowRatio: 0,
   },
 ];
 
@@ -174,8 +202,9 @@ export async function ingestWorkbook(
         throw new IngestError("엑셀에서 데이터를 찾을 수 없습니다.");
       }
 
-      const existing = await countRows(supabase, target.table);
-      if (existing > 0 && rows.length < existing * MIN_ROW_RATIO) {
+      const ratio = target.minRowRatio ?? MIN_ROW_RATIO;
+      const existing = ratio > 0 ? await countRows(supabase, target.table) : 0;
+      if (existing > 0 && rows.length < existing * ratio) {
         throw new IngestError(
           `행 수가 급감했습니다 (기존 ${existing.toLocaleString()}건 → 새 파일 ${rows.length.toLocaleString()}건). ` +
             `파일이 손상되었을 수 있어 기존 데이터를 유지합니다.`,

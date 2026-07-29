@@ -28,6 +28,11 @@ const DASHBOARDS = [
     title: "메시 출하현황",
     description: "메시 월별 출하량, 가공처별 실적 및 수주잔량",
   },
+  {
+    href: "/vm-coil",
+    title: "진공증착 생산실적",
+    description: "증착코일·증착재 출하 중량, 외주비율 및 전년 대비 증감",
+  },
   // add future dashboards here -- each one automatically gets the next
   // color in DASHBOARD_COLOR_CLASSES below.
 ];
