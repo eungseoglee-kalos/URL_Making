@@ -20,6 +20,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useIsDark } from "@/lib/use-is-dark";
 import LastSyncBadge from "./LastSyncBadge";
+import { periodDefaults } from "@/lib/period";
 
 type ShipmentRecord = {
   ship_date: string;
@@ -119,7 +120,7 @@ export default function ShipmentDashboard({
   const [records, setRecords] = useState<ShipmentRecord[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [yearOverride, setYearOverride] = useState<string | null>(null);
-  const [month, setMonth] = useState<string>("all");
+  const [monthOverride, setMonthOverride] = useState<string | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
     new Set(),
   );
@@ -140,10 +141,24 @@ export default function ShipmentDashboard({
     ).sort();
   }, [records]);
 
+  // 실적이 있는 마지막 달로 연다. 예상/세정출하 행은 미래 날짜를 달고 있어
+  // (수주 잔량이 연말까지 잡힌다) 전체 최대값을 쓰면 실적이 거의 없는 달이
+  // 열린다. 그래서 최종출하일과 같은 기준 -- 실적 행 -- 으로 계산한다.
+  const defaults = useMemo(
+    () =>
+      periodDefaults(
+        (records ?? []).filter((r) => !isBacklog(r)).map((r) => r.ship_date),
+      ),
+    [records],
+  );
+
   // 연도는 "전체" 없이 항상 한 해를 본다 -- 월별 차트의 x축이 1~12월이라
-  // 여러 해를 겹쳐 놓으면 읽을 수 없기 때문. 기본값은 최신 연도이고, 사용자가
-  // 고르기 전까지는 state에 담지 않고 파생값으로 둔다.
-  const year = yearOverride ?? years[years.length - 1] ?? null;
+  // 여러 해를 겹쳐 놓으면 읽을 수 없기 때문. 실적이 하나도 없으면 그때만
+  // 데이터에 있는 마지막 연도로 물러선다.
+  const year =
+    yearOverride ??
+    (defaults.year !== "all" ? defaults.year : (years[years.length - 1] ?? null));
+  const month = monthOverride ?? defaults.month;
 
   const categories = useMemo(() => {
     if (!records) return [];
@@ -347,7 +362,7 @@ export default function ShipmentDashboard({
           <label className="mb-1 block text-xs text-foreground/60">월</label>
           <select
             value={month}
-            onChange={(e) => setMonth(e.target.value)}
+            onChange={(e) => setMonthOverride(e.target.value)}
             className="rounded-md border border-black/10 bg-white px-2 py-1.5 text-sm text-black dark:border-white/10 dark:bg-neutral-800 dark:text-white"
           >
             <option value="all">전체</option>

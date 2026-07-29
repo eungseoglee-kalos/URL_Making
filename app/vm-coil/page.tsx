@@ -20,6 +20,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useIsDark } from "@/lib/use-is-dark";
 import LastSyncBadge from "@/components/dashboard/LastSyncBadge";
+import { periodDefaults } from "@/lib/period";
 
 type Shipment = {
   ship_date: string;
@@ -124,8 +125,10 @@ export default function VmCoilPage() {
   const [shipments, setShipments] = useState<Shipment[] | null>(null);
   const [backlog, setBacklog] = useState<Backlog[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [year, setYear] = useState<string>("all");
-  const [month, setMonth] = useState<string>("all");
+  // 데이터가 있는 마지막 달로 열되, 사용자가 고르면 그 선택을 따른다
+  // ("전체"도 유효한 선택이므로 null 만 "아직 안 고름"을 뜻한다).
+  const [yearOverride, setYearOverride] = useState<string | null>(null);
+  const [monthOverride, setMonthOverride] = useState<string | null>(null);
   const isDark = useIsDark();
   const axisColor = isDark ? "#d4d4d4" : "#404040";
   const labelColor = isDark ? "#f5f5f5" : "#171717";
@@ -160,6 +163,13 @@ export default function VmCoilPage() {
       shipments[0].ship_date,
     );
   }, [shipments]);
+
+  const defaults = useMemo(
+    () => periodDefaults(shipments?.map((r) => r.ship_date) ?? []),
+    [shipments],
+  );
+  const year = yearOverride ?? defaults.year;
+  const month = monthOverride ?? defaults.month;
 
   // 기간 필터를 적용한 집합. KPI와 외주비율이 쓴다.
   const filtered = useMemo(() => {
@@ -313,7 +323,7 @@ export default function VmCoilPage() {
           </label>
           <select
             value={year}
-            onChange={(e) => setYear(e.target.value)}
+            onChange={(e) => setYearOverride(e.target.value)}
             className="rounded-md border border-black/10 bg-white px-2 py-1.5 text-sm text-black dark:border-white/10 dark:bg-neutral-800 dark:text-white"
           >
             <option value="all">전체</option>
@@ -330,7 +340,7 @@ export default function VmCoilPage() {
           </label>
           <select
             value={month}
-            onChange={(e) => setMonth(e.target.value)}
+            onChange={(e) => setMonthOverride(e.target.value)}
             className="rounded-md border border-black/10 bg-white px-2 py-1.5 text-sm text-black dark:border-white/10 dark:bg-neutral-800 dark:text-white"
           >
             <option value="all">전체</option>

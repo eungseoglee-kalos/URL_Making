@@ -19,6 +19,7 @@ import {
 } from "recharts";
 import { createClient } from "@/lib/supabase/client";
 import { useIsDark } from "@/lib/use-is-dark";
+import { periodDefaults } from "@/lib/period";
 import LastSyncBadge from "@/components/dashboard/LastSyncBadge";
 
 type CoatingRecord = {
@@ -98,8 +99,10 @@ async function fetchAllCoatingRecords(): Promise<CoatingRecord[]> {
 export default function CoatingPage() {
   const [records, setRecords] = useState<CoatingRecord[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [year, setYear] = useState<string>("all");
-  const [month, setMonth] = useState<string>("all");
+  // 데이터가 있는 마지막 달로 열되, 사용자가 한 번이라도 고르면 그 선택을 따른다
+  // ("전체"도 유효한 선택이므로 null 만 "아직 안 고름"을 뜻한다).
+  const [yearOverride, setYearOverride] = useState<string | null>(null);
+  const [monthOverride, setMonthOverride] = useState<string | null>(null);
   const [selectedParts, setSelectedParts] = useState<Set<string>>(new Set());
   const isDark = useIsDark();
   const axisColor = isDark ? "#d4d4d4" : "#404040";
@@ -122,6 +125,13 @@ export default function CoatingPage() {
       new Set(records.map((r) => r.coating_date.slice(0, 4))),
     ).sort();
   }, [records]);
+
+  const defaults = useMemo(
+    () => periodDefaults(records?.map((r) => r.coating_date) ?? []),
+    [records],
+  );
+  const year = yearOverride ?? defaults.year;
+  const month = monthOverride ?? defaults.month;
 
   const partFiltered = useMemo(() => {
     if (!records) return [];
@@ -270,7 +280,7 @@ export default function CoatingPage() {
           </label>
           <select
             value={year}
-            onChange={(e) => setYear(e.target.value)}
+            onChange={(e) => setYearOverride(e.target.value)}
             className="rounded-md border border-black/10 bg-white px-2 py-1.5 text-sm text-black dark:border-white/10 dark:bg-neutral-800 dark:text-white"
           >
             <option value="all">전체</option>
@@ -285,7 +295,7 @@ export default function CoatingPage() {
           <label className="mb-1 block text-xs text-foreground/60">월</label>
           <select
             value={month}
-            onChange={(e) => setMonth(e.target.value)}
+            onChange={(e) => setMonthOverride(e.target.value)}
             className="rounded-md border border-black/10 bg-white px-2 py-1.5 text-sm text-black dark:border-white/10 dark:bg-neutral-800 dark:text-white"
           >
             <option value="all">전체</option>

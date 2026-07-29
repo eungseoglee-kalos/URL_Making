@@ -25,6 +25,7 @@ import {
   type FailTypeMode,
 } from "@/lib/fail-type";
 import LastSyncBadge from "@/components/dashboard/LastSyncBadge";
+import { periodDefaults } from "@/lib/period";
 
 type PlanRecord = {
   record_date: string;
@@ -103,8 +104,10 @@ async function fetchAllPlanRecords(): Promise<PlanRecord[]> {
 export default function ProductionPlanPage() {
   const [records, setRecords] = useState<PlanRecord[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [year, setYear] = useState<string>("all");
-  const [month, setMonth] = useState<string>("all");
+  // 데이터가 있는 마지막 달로 열되, 사용자가 고르면 그 선택을 따른다
+  // ("전체"도 유효한 선택이므로 null 만 "아직 안 고름"을 뜻한다).
+  const [yearOverride, setYearOverride] = useState<string | null>(null);
+  const [monthOverride, setMonthOverride] = useState<string | null>(null);
   const [selectedDivisions, setSelectedDivisions] = useState<Set<string>>(
     new Set(),
   );
@@ -150,6 +153,13 @@ export default function ProductionPlanPage() {
       records[0].record_date,
     );
   }, [records]);
+
+  const defaults = useMemo(
+    () => periodDefaults(records?.map((r) => r.record_date) ?? []),
+    [records],
+  );
+  const year = yearOverride ?? defaults.year;
+  const month = monthOverride ?? defaults.month;
 
   // Org filters only -- the two trend charts below need every month in view,
   // so they must not be narrowed by the 연도/월 pickers.
@@ -304,7 +314,7 @@ export default function ProductionPlanPage() {
           <label className="mb-1 block text-xs text-foreground/60">연도</label>
           <select
             value={year}
-            onChange={(e) => setYear(e.target.value)}
+            onChange={(e) => setYearOverride(e.target.value)}
             className="rounded-md border border-black/10 bg-white px-2 py-1.5 text-sm text-black dark:border-white/10 dark:bg-neutral-800 dark:text-white"
           >
             <option value="all">전체</option>
@@ -319,7 +329,7 @@ export default function ProductionPlanPage() {
           <label className="mb-1 block text-xs text-foreground/60">월</label>
           <select
             value={month}
-            onChange={(e) => setMonth(e.target.value)}
+            onChange={(e) => setMonthOverride(e.target.value)}
             className="rounded-md border border-black/10 bg-white px-2 py-1.5 text-sm text-black dark:border-white/10 dark:bg-neutral-800 dark:text-white"
           >
             <option value="all">전체</option>
