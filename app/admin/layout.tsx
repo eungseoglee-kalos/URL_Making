@@ -22,7 +22,7 @@ export default async function AdminLayout({
   }
 
   if (user.email !== process.env.ADMIN_EMAIL) {
-    redirect("/coating");
+    redirect("/");
   }
 
   return (

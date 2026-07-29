@@ -23,7 +23,7 @@ async function requireAdmin() {
   } = await supabase.auth.getUser();
 
   if (user?.email !== process.env.ADMIN_EMAIL) {
-    redirect("/coating");
+    redirect("/");
   }
 
   return supabase;
