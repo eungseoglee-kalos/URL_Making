@@ -59,13 +59,15 @@ function toNum(v: unknown): number | null {
 // Mirrors the "계획대비실적data" sheet: one header row, then one row per
 // plan/actual pair. Columns beyond 판정 (N) hold standalone slicer lookup
 // lists rather than per-row values, so they are ignored.
+export const PRODUCTION_PLAN_SHEET = "계획대비실적data";
+
 export function parseProductionPlanExcel(
   buffer: ArrayBuffer,
 ): ProductionPlanRow[] {
   const workbook = XLSX.read(buffer, { type: "array", cellDates: false });
-  const sheet = workbook.Sheets["계획대비실적data"];
+  const sheet = workbook.Sheets[PRODUCTION_PLAN_SHEET];
   if (!sheet) {
-    throw new Error('시트 "계획대비실적data"를 찾을 수 없습니다.');
+    throw new Error(`시트 "${PRODUCTION_PLAN_SHEET}"를 찾을 수 없습니다.`);
   }
 
   const rows: unknown[][] = XLSX.utils.sheet_to_json(sheet, {

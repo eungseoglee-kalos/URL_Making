@@ -4,17 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { parseCoatingExcel, type CoatingRow } from "@/lib/coating-import";
-import {
-  parseProductionPlanExcel,
-  type ProductionPlanRow,
-} from "@/lib/production-plan-import";
-import {
-  parseHeaterCoilExcel,
-  parseMeshExcel,
-  type HeaterCoilRow,
-  type MeshRow,
-} from "@/lib/shipment-import";
+import { ingestWorkbook, IngestError } from "@/lib/ingest";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -27,49 +17,6 @@ async function requireAdmin() {
   }
 
   return supabase;
-}
-
-type AdminClient = Awaited<ReturnType<typeof createClient>>;
-
-// Wipes a table and re-inserts everything. Tens of thousands of rows are too
-// slow one chunk at a time for the 60s budget, so chunks go up a few at once.
-// Errors bail out through redirect(), which throws -- nothing after it runs.
-async function replaceTableRows(
-  supabase: AdminClient,
-  table: string,
-  rows: object[],
-  errorKey: string,
-) {
-  const fail = (message: string) => {
-    redirect(`/admin?${errorKey}=` + encodeURIComponent(message));
-  };
-
-  const { error: deleteError } = await supabase
-    .from(table)
-    .delete()
-    .gt("id", 0);
-
-  if (deleteError) {
-    fail("기존 데이터 삭제 실패: " + deleteError.message);
-  }
-
-  const chunkSize = 1000;
-  const concurrency = 4;
-  const chunks: object[][] = [];
-  for (let i = 0; i < rows.length; i += chunkSize) {
-    chunks.push(rows.slice(i, i + chunkSize));
-  }
-
-  for (let i = 0; i < chunks.length; i += concurrency) {
-    const group = chunks.slice(i, i + concurrency);
-    const results = await Promise.all(
-      group.map((chunk) => supabase.from(table).insert(chunk)),
-    );
-    const failed = results.find((r) => r.error);
-    if (failed?.error) {
-      fail(`${i * chunkSize}건째 부근 업로드 실패: ${failed.error.message}`);
-    }
-  }
 }
 
 export async function approveUser(formData: FormData) {
@@ -101,153 +48,63 @@ export async function deleteMember(formData: FormData) {
   );
 }
 
-export async function uploadCoatingExcel(formData: FormData) {
+/**
+ * 관리자 페이지의 수동 업로드. /api/ingest 와 같은 취합 경로를 타므로 시트
+ * 이름으로 종류가 자동 판별되고, 행 수 급감 가드와 sync_log 기록도 똑같이
+ * 적용된다. 업로드 칸을 종류별로 나눌 필요가 없어졌다.
+ */
+export async function uploadExcel(formData: FormData) {
   const supabase = await requireAdmin();
 
   const file = formData.get("excel");
   if (!(file instanceof File) || file.size === 0) {
     redirect(
-      "/admin?coatingError=" + encodeURIComponent("파일을 선택해주세요."),
+      "/admin?uploadError=" + encodeURIComponent("파일을 선택해주세요."),
     );
   }
 
   const buffer = await file.arrayBuffer();
 
-  let rows: CoatingRow[];
+  let outcomes;
   try {
-    rows = parseCoatingExcel(buffer);
+    outcomes = await ingestWorkbook(supabase, buffer, {
+      source: "admin",
+      fileName: file.name,
+    });
   } catch (e) {
+    const message =
+      e instanceof IngestError || e instanceof Error
+        ? e.message
+        : "취합 실패";
+    redirect("/admin?uploadError=" + encodeURIComponent(message));
+  }
+
+  for (const o of outcomes) {
+    if (o.status === "ok") revalidatePath(o.path);
+  }
+
+  const ok = outcomes.filter((o) => o.status === "ok");
+  const failed = outcomes.filter((o) => o.status === "error");
+
+  const parts: string[] = [];
+  if (ok.length > 0) {
+    parts.push(
+      ok
+        .map((o) => `${o.label} ${o.rows?.toLocaleString()}건`)
+        .join(", ") + " 반영 완료",
+    );
+  }
+  if (failed.length > 0) {
     redirect(
-      "/admin?coatingError=" +
-        encodeURIComponent(e instanceof Error ? e.message : "파싱 실패"),
+      "/admin?uploadError=" +
+        encodeURIComponent(
+          failed.map((o) => `${o.label}: ${o.message}`).join(" / "),
+        ) +
+        (parts.length > 0
+          ? "&uploadMessage=" + encodeURIComponent(parts.join(" "))
+          : ""),
     );
   }
 
-  if (rows.length === 0) {
-    redirect(
-      "/admin?coatingError=" +
-        encodeURIComponent("엑셀에서 데이터를 찾을 수 없습니다."),
-    );
-  }
-
-  const { error: deleteError } = await supabase
-    .from("coating_records")
-    .delete()
-    .gt("id", 0);
-
-  if (deleteError) {
-    redirect(
-      "/admin?coatingError=" +
-        encodeURIComponent("기존 데이터 삭제 실패: " + deleteError.message),
-    );
-  }
-
-  const chunkSize = 1000;
-  for (let i = 0; i < rows.length; i += chunkSize) {
-    const chunk = rows.slice(i, i + chunkSize);
-    const { error: insertError } = await supabase
-      .from("coating_records")
-      .insert(chunk);
-    if (insertError) {
-      redirect(
-        "/admin?coatingError=" +
-          encodeURIComponent(
-            `${i}건째 업로드 중 실패: ${insertError.message}`,
-          ),
-      );
-    }
-  }
-
-  revalidatePath("/coating");
-  redirect(
-    "/admin?coatingMessage=" +
-      encodeURIComponent(`${rows.length}건 업로드 완료`),
-  );
-}
-
-export async function uploadProductionPlanExcel(formData: FormData) {
-  const supabase = await requireAdmin();
-
-  const file = formData.get("excel");
-  if (!(file instanceof File) || file.size === 0) {
-    redirect("/admin?planError=" + encodeURIComponent("파일을 선택해주세요."));
-  }
-
-  const buffer = await file.arrayBuffer();
-
-  let rows: ProductionPlanRow[];
-  try {
-    rows = parseProductionPlanExcel(buffer);
-  } catch (e) {
-    redirect(
-      "/admin?planError=" +
-        encodeURIComponent(e instanceof Error ? e.message : "파싱 실패"),
-    );
-  }
-
-  if (rows.length === 0) {
-    redirect(
-      "/admin?planError=" +
-        encodeURIComponent("엑셀에서 데이터를 찾을 수 없습니다."),
-    );
-  }
-
-  await replaceTableRows(supabase, "production_plan_records", rows, "planError");
-
-  revalidatePath("/production-plan");
-  redirect(
-    "/admin?planMessage=" +
-      encodeURIComponent(`${rows.length.toLocaleString()}건 업로드 완료`),
-  );
-}
-
-// 히터코일과 메시는 한 엑셀 파일의 두 시트라 업로드도 한 번에 받아
-// 두 테이블을 함께 교체한다.
-export async function uploadShipmentExcel(formData: FormData) {
-  const supabase = await requireAdmin();
-
-  const file = formData.get("excel");
-  if (!(file instanceof File) || file.size === 0) {
-    redirect(
-      "/admin?shipmentError=" + encodeURIComponent("파일을 선택해주세요."),
-    );
-  }
-
-  const buffer = await file.arrayBuffer();
-
-  let heaterCoil: HeaterCoilRow[];
-  let mesh: MeshRow[];
-  try {
-    heaterCoil = parseHeaterCoilExcel(buffer);
-    mesh = parseMeshExcel(buffer);
-  } catch (e) {
-    redirect(
-      "/admin?shipmentError=" +
-        encodeURIComponent(e instanceof Error ? e.message : "파싱 실패"),
-    );
-  }
-
-  if (heaterCoil.length === 0 && mesh.length === 0) {
-    redirect(
-      "/admin?shipmentError=" +
-        encodeURIComponent("엑셀에서 데이터를 찾을 수 없습니다."),
-    );
-  }
-
-  await replaceTableRows(
-    supabase,
-    "heater_coil_shipments",
-    heaterCoil,
-    "shipmentError",
-  );
-  await replaceTableRows(supabase, "mesh_shipments", mesh, "shipmentError");
-
-  revalidatePath("/heater-coil");
-  revalidatePath("/mesh");
-  redirect(
-    "/admin?shipmentMessage=" +
-      encodeURIComponent(
-        `히터코일 ${heaterCoil.length.toLocaleString()}건, 메시 ${mesh.length.toLocaleString()}건 업로드 완료`,
-      ),
-  );
+  redirect("/admin?uploadMessage=" + encodeURIComponent(parts.join(" ")));
 }

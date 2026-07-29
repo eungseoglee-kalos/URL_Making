@@ -63,11 +63,13 @@ function parseRoundNo(v: unknown): number | null {
 // coating/inspection event. Every row is kept as-is (no deduplication) --
 // rows that look like duplicates (same LOT + round) turned out to be
 // genuine separate records (re-tests / split F-R handling).
+export const COATING_SHEET = "코팅현황";
+
 export function parseCoatingExcel(buffer: ArrayBuffer): CoatingRow[] {
   const workbook = XLSX.read(buffer, { type: "array", cellDates: false });
-  const sheet = workbook.Sheets["코팅현황"];
+  const sheet = workbook.Sheets[COATING_SHEET];
   if (!sheet) {
-    throw new Error('시트 "코팅현황"을 찾을 수 없습니다.');
+    throw new Error(`시트 "${COATING_SHEET}"을 찾을 수 없습니다.`);
   }
 
   const rows: unknown[][] = XLSX.utils.sheet_to_json(sheet, {

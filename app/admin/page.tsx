@@ -1,12 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import ConfirmSubmitButton from "@/components/dashboard/ConfirmSubmitButton";
-import {
-  approveUser,
-  deleteMember,
-  uploadCoatingExcel,
-  uploadProductionPlanExcel,
-  uploadShipmentExcel,
-} from "./actions";
+import { INGEST_TARGETS } from "@/lib/ingest";
+import { approveUser, deleteMember, uploadExcel } from "./actions";
 
 export const maxDuration = 60;
 
@@ -14,26 +9,14 @@ export default async function AdminPage({
   searchParams,
 }: {
   searchParams: Promise<{
-    coatingError?: string;
-    coatingMessage?: string;
-    planError?: string;
-    planMessage?: string;
-    shipmentError?: string;
-    shipmentMessage?: string;
+    uploadError?: string;
+    uploadMessage?: string;
     adminError?: string;
     adminMessage?: string;
   }>;
 }) {
-  const {
-    coatingError,
-    coatingMessage,
-    planError,
-    planMessage,
-    shipmentError,
-    shipmentMessage,
-    adminError,
-    adminMessage,
-  } = await searchParams;
+  const { uploadError, uploadMessage, adminError, adminMessage } =
+    await searchParams;
 
   const supabase = await createClient();
 
@@ -48,13 +31,16 @@ export default async function AdminPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-lg border border-black/10 p-4 dark:border-white/10">
-        <h2 className="mb-1 text-sm font-semibold">코팅현황 데이터 업로드</h2>
-        <p className="mb-3 text-xs text-foreground/60">
-          엑셀 파일(&quot;코팅현황&quot; 시트 포함)을 올리면 기존 데이터를
-          전부 교체합니다.
+        <h2 className="mb-1 text-sm font-semibold">데이터 업로드</h2>
+        <p className="mb-1 text-xs text-foreground/60">
+          엑셀 파일을 올리면 시트 이름으로 종류를 판별해 해당 대시보드의 기존
+          데이터를 교체합니다. 한 파일에 여러 시트가 있으면 함께 반영됩니다.
+        </p>
+        <p className="mb-3 text-xs text-foreground/50">
+          인식하는 시트: {INGEST_TARGETS.map((t) => t.sheet).join(", ")}
         </p>
         <form
-          action={uploadCoatingExcel}
+          action={uploadExcel}
           className="flex flex-col gap-2 sm:flex-row sm:items-center"
         >
           <input
@@ -68,84 +54,14 @@ export default async function AdminPage({
             업로드
           </button>
         </form>
-        {coatingError && (
+        {uploadError && (
           <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-            {coatingError}
+            {uploadError}
           </p>
         )}
-        {coatingMessage && (
+        {uploadMessage && (
           <p className="mt-2 text-sm text-green-600 dark:text-green-400">
-            {coatingMessage}
-          </p>
-        )}
-      </div>
-
-      <div className="rounded-lg border border-black/10 p-4 dark:border-white/10">
-        <h2 className="mb-1 text-sm font-semibold">
-          생산계획 대비 실적 데이터 업로드
-        </h2>
-        <p className="mb-3 text-xs text-foreground/60">
-          엑셀 파일(&quot;계획대비실적data&quot; 시트 포함)을 올리면 기존
-          데이터를 전부 교체합니다.
-        </p>
-        <form
-          action={uploadProductionPlanExcel}
-          className="flex flex-col gap-2 sm:flex-row sm:items-center"
-        >
-          <input
-            type="file"
-            name="excel"
-            accept=".xlsx,.xls"
-            required
-            className="text-sm"
-          />
-          <button className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background">
-            업로드
-          </button>
-        </form>
-        {planError && (
-          <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-            {planError}
-          </p>
-        )}
-        {planMessage && (
-          <p className="mt-2 text-sm text-green-600 dark:text-green-400">
-            {planMessage}
-          </p>
-        )}
-      </div>
-
-      <div className="rounded-lg border border-black/10 p-4 dark:border-white/10">
-        <h2 className="mb-1 text-sm font-semibold">
-          히터코일 · 메시 출하현황 데이터 업로드
-        </h2>
-        <p className="mb-3 text-xs text-foreground/60">
-          엑셀 파일(&quot;히터코일출하data&quot;, &quot;메시출하data&quot; 시트
-          포함)을 올리면 두 대시보드의 기존 데이터를 함께 교체합니다.
-        </p>
-        <form
-          action={uploadShipmentExcel}
-          className="flex flex-col gap-2 sm:flex-row sm:items-center"
-        >
-          <input
-            type="file"
-            name="excel"
-            accept=".xlsx,.xls"
-            required
-            className="text-sm"
-          />
-          <button className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background">
-            업로드
-          </button>
-        </form>
-        {shipmentError && (
-          <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-            {shipmentError}
-          </p>
-        )}
-        {shipmentMessage && (
-          <p className="mt-2 text-sm text-green-600 dark:text-green-400">
-            {shipmentMessage}
+            {uploadMessage}
           </p>
         )}
       </div>
