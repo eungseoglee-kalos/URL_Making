@@ -19,6 +19,11 @@ import {
 } from "recharts";
 import { createClient } from "@/lib/supabase/client";
 import { useIsDark } from "@/lib/use-is-dark";
+import {
+  toFailType,
+  FAIL_TYPE_COLORS,
+  type FailTypeMode,
+} from "@/lib/fail-type";
 
 type PlanRecord = {
   record_date: string;
@@ -103,6 +108,9 @@ export default function ProductionPlanPage() {
     new Set(),
   );
   const [selectedDepts, setSelectedDepts] = useState<Set<string>>(new Set());
+  // 대분류가 기본값이다. 기간 필터 없이 열면 2024년(구 분류)부터 2026년(신 분류)이
+  // 한 화면에 섞이는데, 그때 비교 가능한 쪽은 대분류뿐이다.
+  const [failTypeMode, setFailTypeMode] = useState<FailTypeMode>("group");
   const isDark = useIsDark();
   const axisColor = isDark ? "#d4d4d4" : "#404040";
   const labelColor = isDark ? "#f5f5f5" : "#171717";
@@ -244,7 +252,7 @@ export default function ProductionPlanPage() {
     const missed = filtered.filter((r) => !r.achieved);
     const byType = new Map<string, number>();
     for (const r of missed) {
-      const key = r.fail_type ?? BLANK_LABEL;
+      const key = toFailType(r.fail_type, failTypeMode);
       byType.set(key, (byType.get(key) ?? 0) + 1);
     }
     return Array.from(byType.entries())
@@ -254,7 +262,7 @@ export default function ProductionPlanPage() {
         value: Math.round((count / missed.length) * 10000) / 100,
       }))
       .sort((a, b) => b.count - a.count);
-  }, [filtered]);
+  }, [filtered, failTypeMode]);
 
   const missDetail = useMemo(() => {
     return filtered
@@ -459,7 +467,36 @@ export default function ProductionPlanPage() {
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="미달 유형별 분석" note="모든 필터 적용 · 미달 건만">
+        <ChartCard
+          title="미달 유형별 분석"
+          note={
+            failTypeMode === "group"
+              ? "모든 필터 적용 · 미달 건만 · 2024년부터 전 기간 비교 가능"
+              : "모든 필터 적용 · 미달 건만 · 2025-08-18 이전은 영업요청/생산관리 구분 없음"
+          }
+          action={
+            <div className="flex rounded-md border border-black/10 text-xs dark:border-white/10">
+              {(
+                [
+                  ["group", "대분류"],
+                  ["detail", "세부"],
+                ] as const
+              ).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  onClick={() => setFailTypeMode(mode)}
+                  className={`px-2.5 py-1 first:rounded-l-md last:rounded-r-md transition-colors ${
+                    failTypeMode === mode
+                      ? "bg-foreground text-background"
+                      : "text-foreground/60 hover:bg-black/5 dark:hover:bg-white/10"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          }
+        >
           {failTypeBreakdown.length === 0 ? (
             <p className="py-16 text-center text-sm text-foreground/60">
               미달 건이 없습니다.
@@ -495,10 +532,13 @@ export default function ProductionPlanPage() {
                     );
                   }}
                 >
-                  {failTypeBreakdown.map((_, i) => (
+                  {failTypeBreakdown.map((d, i) => (
                     <Cell
-                      key={i}
-                      fill={SERIES_COLORS[i % SERIES_COLORS.length]}
+                      key={d.name}
+                      fill={
+                        FAIL_TYPE_COLORS[d.name] ??
+                        SERIES_COLORS[i % SERIES_COLORS.length]
+                      }
                     />
                   ))}
                 </Pie>
@@ -617,17 +657,24 @@ function CheckboxFilter({
 function ChartCard({
   title,
   note,
+  action,
   children,
 }: {
   title: string;
   note?: string;
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <div className="rounded-lg border border-black/10 p-4 dark:border-white/10">
-      <p className="text-sm font-semibold">{title}</p>
-      {note && <p className="mb-3 text-xs text-foreground/50">{note}</p>}
-      {children}
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold">{title}</p>
+          {note && <p className="text-xs text-foreground/50">{note}</p>}
+        </div>
+        {action}
+      </div>
+      <div className="mt-3">{children}</div>
     </div>
   );
 }
