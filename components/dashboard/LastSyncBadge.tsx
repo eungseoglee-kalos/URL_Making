@@ -5,12 +5,25 @@ import { createClient } from "@/lib/supabase/client";
 
 type SyncRow = { status: string; created_at: string; row_count: number | null };
 
+// 공장이 한 곳뿐이라 "마지막 갱신"은 보는 사람 위치와 무관하게 공장 시간이어야
+// 한다. 브라우저 로컬로 그리면 해외에서 보거나 시간대가 잘못 잡힌 노트북에서
+// 엉뚱한 시각이 표시된다. hourCycle h23 은 자정을 24시로 쓰는 구현을 피한다.
+const KST_FORMAT = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Asia/Seoul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
 function formatKst(iso: string) {
-  const d = new Date(iso);
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(
-    d.getHours(),
-  )}:${p(d.getMinutes())}`;
+  const p: Record<string, string> = {};
+  for (const { type, value } of KST_FORMAT.formatToParts(new Date(iso))) {
+    p[type] = value;
+  }
+  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;
 }
 
 /**
@@ -67,7 +80,7 @@ export default function LastSyncBadge({ table }: { table: string }) {
           : `${row.row_count.toLocaleString()}건 반영`
       }
     >
-      마지막 갱신 {formatKst(row.created_at)}
+      마지막 갱신 {formatKst(row.created_at)} (KST)
       {stale && ` · ${Math.floor(ageHours / 24)}일 경과`}
     </p>
   );
