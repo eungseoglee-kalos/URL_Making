@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# agent tooling runtime state (.claude/launch.json stays tracked, and
+# /.omc/skills is the one committable thing under /.omc)
+/.omc/*
+!/.omc/skills/
+/.claude/scheduled_tasks.lock
