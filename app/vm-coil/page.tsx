@@ -18,6 +18,7 @@ import {
   LabelList,
 } from "recharts";
 import { createClient } from "@/lib/supabase/client";
+import { TOOLTIP_PROPS } from "@/lib/chart";
 import { useIsDark } from "@/lib/use-is-dark";
 import LastSyncBadge from "@/components/dashboard/LastSyncBadge";
 import { periodDefaults } from "@/lib/period";
@@ -283,10 +284,6 @@ export default function VmCoilPage() {
   }, [shipments, years, year]);
 
   const coilRatio = useMemo(() => makerRatio(filtered, COIL), [filtered]);
-  const materialRatio = useMemo(
-    () => makerRatio(filtered, MATERIAL),
-    [filtered],
-  );
 
   if (error) {
     return <p className="text-sm text-red-600 dark:text-red-400">{error}</p>;
@@ -355,25 +352,62 @@ export default function VmCoilPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <KpiCard label="전체 출하 중량" value={`${kpi.total}`} unit="ton" accent="border-t-blue-500" />
-        <KpiCard label="KBM생산중량" value={`${kpi.kbm}`} unit="ton" accent="border-t-pink-500" />
-        <KpiCard label="외주생산중량" value={`${kpi.out}`} unit="ton" accent="border-t-amber-500" />
-        <KpiCard label="KBM생산점유율" value={`${kpi.kbmPct}%`} accent="border-t-emerald-500" />
-        <KpiCard label="외주생산점유율" value={`${kpi.outPct}%`} accent="border-t-yellow-400" />
+        <KpiCard label="전체 출하 중량" value={`${kpi.total}`} unit="ton" tone="blue" />
+        <KpiCard label="KBM생산중량" value={`${kpi.kbm}`} unit="ton" tone="pink" />
+        <KpiCard label="외주생산중량" value={`${kpi.out}`} unit="ton" tone="amber" />
+        <KpiCard label="KBM생산점유율" value={`${kpi.kbmPct}%`} tone="emerald" />
+        <KpiCard label="외주생산점유율" value={`${kpi.outPct}%`} tone="violet" />
       </div>
       <p className="-mt-4 text-xs text-foreground/50">
         KPI와 외주비율은 증착재를 제외한 <strong>증착코일</strong> 기준 ·{" "}
         {periodNote}
       </p>
 
+      {/* 좌 2 : 우 1 의 3행. 왼쪽은 12개월/전년비교처럼 가로로 긴 차트, 오른쪽은
+          항목이 두어 개뿐인 요약. 같은 행의 카드 높이를 맞추려고 차트 높이는
+          320 으로 통일했다. */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <div className="xl:col-span-2">
+          <ChartCard
+            title="증착코일 월간 출하량 (ton)"
+            note={
+              year === "all" ? "최근 12개월 · 월 필터 무시" : `${year}년 · 월 필터 무시`
+            }
+          >
+            <ResponsiveContainer width="100%" height={320}>
+              <ComposedChart data={coilMonthly} margin={{ top: 20, right: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis dataKey="month" tick={{ fill: axisColor, fontSize: 11 }} />
+                <YAxis
+                  tick={{ fill: axisColor, fontSize: 11 }}
+                  tickFormatter={labelNumber}
+                />
+                <Tooltip {...TOOLTIP_PROPS} formatter={labelNumber} />
+                <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
+                <Bar dataKey="KBM" fill={COLOR_KBM}>
+                  <LabelList dataKey="KBM" position="top" fill={labelColor} fontSize={9} formatter={labelNumber} />
+                </Bar>
+                <Bar dataKey="외주" fill={COLOR_OUT}>
+                  <LabelList dataKey="외주" position="top" fill={labelColor} fontSize={9} formatter={labelNumber} />
+                </Bar>
+                <Line dataKey="합계" stroke={COLOR_TOTAL} strokeWidth={2} dot={{ r: 3 }} connectNulls>
+                  <LabelList dataKey="합계" position="top" fill={labelColor} fontSize={9} formatter={labelNumber} />
+                </Line>
+              </ComposedChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        </div>
+
         <ChartCard title="증착코일 연간 출하량 (ton)" note="기간 필터 무시">
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={320}>
             <ComposedChart data={yearly} margin={{ top: 20, right: 8 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
               <XAxis dataKey="year" tick={{ fill: axisColor, fontSize: 11 }} />
-              <YAxis tick={{ fill: axisColor, fontSize: 11 }} />
-              <Tooltip />
+              <YAxis
+                tick={{ fill: axisColor, fontSize: 11 }}
+                tickFormatter={labelNumber}
+              />
+              <Tooltip {...TOOLTIP_PROPS} formatter={labelNumber} />
               <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
               <Bar dataKey="KBM" fill={COLOR_KBM}>
                 <LabelList dataKey="KBM" position="top" fill={labelColor} fontSize={10} formatter={labelNumber} />
@@ -390,34 +424,6 @@ export default function VmCoilPage() {
 
         <div className="xl:col-span-2">
           <ChartCard
-            title="증착코일 월간 출하량 (ton)"
-            note={year === "all" ? "최근 12개월 · 월 필터 무시" : `${year}년 · 월 필터 무시`}
-          >
-            <ResponsiveContainer width="100%" height={280}>
-              <ComposedChart data={coilMonthly} margin={{ top: 20, right: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis dataKey="month" tick={{ fill: axisColor, fontSize: 11 }} />
-                <YAxis tick={{ fill: axisColor, fontSize: 11 }} />
-                <Tooltip />
-                <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
-                <Bar dataKey="KBM" fill={COLOR_KBM}>
-                  <LabelList dataKey="KBM" position="top" fill={labelColor} fontSize={9} formatter={labelNumber} />
-                </Bar>
-                <Bar dataKey="외주" fill={COLOR_OUT}>
-                  <LabelList dataKey="외주" position="top" fill={labelColor} fontSize={9} formatter={labelNumber} />
-                </Bar>
-                <Line dataKey="합계" stroke={COLOR_TOTAL} strokeWidth={2} dot={{ r: 3 }} connectNulls>
-                  <LabelList dataKey="합계" position="top" fill={labelColor} fontSize={9} formatter={labelNumber} />
-                </Line>
-              </ComposedChart>
-            </ResponsiveContainer>
-          </ChartCard>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <div className="xl:col-span-2">
-          <ChartCard
             title="증착코일 전년 대비 생산량 증감현황 (ton)"
             note={
               yoy.pair.length === 2
@@ -425,13 +431,13 @@ export default function VmCoilPage() {
                 : "비교할 전년 데이터가 없습니다"
             }
           >
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={320}>
               <ComposedChart data={yoy.data} margin={{ top: 24, right: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                 <XAxis dataKey="month" tick={{ fill: axisColor, fontSize: 11 }} />
-                <YAxis yAxisId="left" tick={{ fill: axisColor, fontSize: 11 }} />
-                <YAxis yAxisId="right" orientation="right" tick={{ fill: axisColor, fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
-                <Tooltip />
+                <YAxis yAxisId="left" tick={{ fill: axisColor, fontSize: 11 }} tickFormatter={labelNumber} />
+                <YAxis yAxisId="right" orientation="right" tick={{ fill: axisColor, fontSize: 11 }} tickFormatter={labelPercent} />
+                <Tooltip {...TOOLTIP_PROPS} />
                 <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
                 {yoy.pair.map((y, i) => (
                   <Bar key={y} yAxisId="left" dataKey={y} name={`${y}년`} fill={i === 0 ? COLOR_OUT : COLOR_KBM}>
@@ -447,12 +453,12 @@ export default function VmCoilPage() {
         </div>
 
         <ChartCard title="당월 예상 출하량 (kg)" note={`${lastShipDate?.slice(0, 7) ?? "-"} 기준 · 출하량 + 수주잔량`}>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={320}>
             <BarChart data={forecast} margin={{ top: 24, right: 8 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
               <XAxis dataKey="name" tick={{ fill: axisColor, fontSize: 11 }} />
-              <YAxis tick={{ fill: axisColor, fontSize: 11 }} />
-              <Tooltip />
+              <YAxis tick={{ fill: axisColor, fontSize: 11 }} tickFormatter={labelNumber} />
+              <Tooltip {...TOOLTIP_PROPS} formatter={labelNumber} />
               <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
               <Bar dataKey="출하량" fill={COLOR_KBM}>
                 <LabelList dataKey="출하량" position="top" fill={labelColor} fontSize={10} formatter={labelNumber} />
@@ -466,20 +472,20 @@ export default function VmCoilPage() {
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
-      </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="xl:col-span-2">
           <ChartCard
             title="증착재 월간 출하량 (kg)"
-            note={year === "all" ? "최근 12개월 · 월 필터 무시" : `${year}년 · 월 필터 무시`}
+            note={
+              year === "all" ? "최근 12개월 · 월 필터 무시" : `${year}년 · 월 필터 무시`
+            }
           >
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={320}>
               <ComposedChart data={materialMonthly} margin={{ top: 20, right: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                 <XAxis dataKey="month" tick={{ fill: axisColor, fontSize: 11 }} />
-                <YAxis tick={{ fill: axisColor, fontSize: 11 }} />
-                <Tooltip />
+                <YAxis tick={{ fill: axisColor, fontSize: 11 }} tickFormatter={labelNumber} />
+                <Tooltip {...TOOLTIP_PROPS} formatter={labelNumber} />
                 <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
                 <Bar dataKey="KBM" fill={COLOR_KBM}>
                   <LabelList dataKey="KBM" position="top" fill={labelColor} fontSize={9} formatter={labelNumber} />
@@ -495,14 +501,9 @@ export default function VmCoilPage() {
           </ChartCard>
         </div>
 
-        <div className="flex flex-col gap-4">
-          <ChartCard title="증착코일 외주비율" note={periodNote}>
-            <RatioPie data={coilRatio} labelColor={labelColor} axisColor={axisColor} />
-          </ChartCard>
-          <ChartCard title="증착재 외주비율" note={periodNote}>
-            <RatioPie data={materialRatio} labelColor={labelColor} axisColor={axisColor} />
-          </ChartCard>
-        </div>
+        <ChartCard title="증착코일 외주비율" note={periodNote}>
+          <RatioPie data={coilRatio} labelColor={labelColor} axisColor={axisColor} />
+        </ChartCard>
       </div>
     </div>
   );
@@ -525,14 +526,14 @@ function RatioPie({
     );
   }
   return (
-    <ResponsiveContainer width="100%" height={190}>
+    <ResponsiveContainer width="100%" height={320}>
       <PieChart>
         <Pie
           data={data}
           dataKey="value"
           nameKey="name"
-          innerRadius={42}
-          outerRadius={70}
+          innerRadius={72}
+          outerRadius={112}
           label={(props) => {
             const { x, y, cx, payload } = props as {
               x: number;
@@ -558,7 +559,7 @@ function RatioPie({
             <Cell key={d.name} fill={d.name === KBM ? COLOR_KBM : COLOR_OUT} />
           ))}
         </Pie>
-        <Tooltip formatter={(v) => `${Math.round(Number(v)).toLocaleString()} kg`} />
+        <Tooltip {...TOOLTIP_PROPS} formatter={(v) => `${Math.round(Number(v)).toLocaleString()} kg`} />
         <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
       </PieChart>
     </ResponsiveContainer>
@@ -583,23 +584,43 @@ function ChartCard({
   );
 }
 
+// 카드마다 색을 달리해 한눈에 구분되게 한다. Tailwind 는 클래스 이름을 정적으로
+// 훑어 빌드하므로 색 이름을 조합해 만들면 안 되고, 이렇게 전체 문자열로 적어야 한다.
+const KPI_TONES = {
+  blue: "border-blue-300 bg-blue-50 dark:border-blue-800 dark:bg-blue-950",
+  pink: "border-pink-300 bg-pink-50 dark:border-pink-800 dark:bg-pink-950",
+  amber: "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950",
+  emerald:
+    "border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950",
+  violet:
+    "border-violet-300 bg-violet-50 dark:border-violet-800 dark:bg-violet-950",
+} as const;
+
+const KPI_VALUE_TONES = {
+  blue: "text-blue-700 dark:text-blue-300",
+  pink: "text-pink-700 dark:text-pink-300",
+  amber: "text-amber-700 dark:text-amber-300",
+  emerald: "text-emerald-700 dark:text-emerald-300",
+  violet: "text-violet-700 dark:text-violet-300",
+} as const;
+
 function KpiCard({
   label,
   value,
   unit,
-  accent,
+  tone,
 }: {
   label: string;
   value: string;
   unit?: string;
-  accent: string;
+  tone: keyof typeof KPI_TONES;
 }) {
   return (
     <div
-      className={`rounded-lg border border-black/10 border-t-4 p-4 text-center dark:border-white/10 ${accent}`}
+      className={`rounded-lg border p-4 text-center ${KPI_TONES[tone]}`}
     >
       <p className="text-xs text-foreground/60">{label}</p>
-      <p className="mt-2 text-2xl font-semibold">
+      <p className={`mt-2 text-2xl font-semibold ${KPI_VALUE_TONES[tone]}`}>
         {value}
         {unit && (
           <span className="ml-1 text-sm font-normal text-foreground/60">

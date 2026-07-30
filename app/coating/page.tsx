@@ -18,6 +18,7 @@ import {
   LabelList,
 } from "recharts";
 import { createClient } from "@/lib/supabase/client";
+import { TOOLTIP_PROPS } from "@/lib/chart";
 import { useIsDark } from "@/lib/use-is-dark";
 import { periodDefaults } from "@/lib/period";
 import { labelNumber, labelPercent } from "@/lib/format";
@@ -384,7 +385,7 @@ export default function CoatingPage() {
               domain={[0, 100]}
               tick={{ fill: axisColor, fontSize: 12 }}
             />
-            <Tooltip />
+            <Tooltip {...TOOLTIP_PROPS} />
             <Legend wrapperStyle={{ color: axisColor, fontSize: 12 }} />
             <Bar
               yAxisId="left"
@@ -439,7 +440,7 @@ export default function CoatingPage() {
             <BarChart data={roundRate}>
               <XAxis dataKey="round" tick={{ fill: axisColor, fontSize: 12 }} />
               <YAxis domain={[0, 100]} tick={{ fill: axisColor, fontSize: 12 }} />
-              <Tooltip />
+              <Tooltip {...TOOLTIP_PROPS} />
               <Bar dataKey="ratePct" name="합격률(%)" fill="#2563eb">
                 <LabelList
                   dataKey="ratePct"
@@ -488,7 +489,7 @@ export default function CoatingPage() {
                   <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip {...TOOLTIP_PROPS} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -508,7 +509,7 @@ export default function CoatingPage() {
                 width={100}
                 tick={{ fill: axisColor, fontSize: 11 }}
               />
-              <Tooltip />
+              <Tooltip {...TOOLTIP_PROPS} />
               <Bar dataKey="ratePct" name="합격률(%)" fill="#2563eb">
                 <LabelList
                   dataKey="ratePct"

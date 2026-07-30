@@ -18,6 +18,7 @@ import {
   LabelList,
 } from "recharts";
 import { createClient } from "@/lib/supabase/client";
+import { TOOLTIP_PROPS, percentTicks } from "@/lib/chart";
 import { useIsDark } from "@/lib/use-is-dark";
 import {
   toFailType,
@@ -26,8 +27,7 @@ import {
 } from "@/lib/fail-type";
 import LastSyncBadge from "@/components/dashboard/LastSyncBadge";
 import { periodDefaults } from "@/lib/period";
-// 이 화면의 차트 레이블은 전부 백분율이라 labelNumber 는 쓰지 않는다.
-import { labelPercent } from "@/lib/format";
+import { labelNumber, labelPercent } from "@/lib/format";
 
 type PlanRecord = {
   record_date: string;
@@ -62,6 +62,20 @@ const PROCESS_CHART_LIMIT = 15;
 
 function pct(v: number | null) {
   return v === null ? "-" : `${Math.round(v * 100)}%`;
+}
+
+/**
+ * 미달 상세표의 계획/실적 수량. 원본에 1/3 처럼 나누어떨어지지 않는 값이 있어
+ * 그대로 두면 소수가 길게 늘어진다. 소수 첫째 자리까지만 보이고, 정수는 정수로
+ * 둔다 (36 을 "36.0" 으로 쓰지 않는다).
+ */
+function qty(v: number | null): string {
+  if (v === null || v === undefined) return "-";
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "-";
+  return (Math.round(n * 10) / 10).toLocaleString("ko-KR", {
+    maximumFractionDigits: 1,
+  });
 }
 
 function achievementRate(records: PlanRecord[]) {
@@ -244,6 +258,23 @@ export default function ProductionPlanPage() {
     return { data, depts };
   }, [yearFiltered]);
 
+  // 달성률은 대개 60~100% 사이라 0 부터 그리면 변화가 뭉개진다. 50% 부터
+  // 10% 간격으로 끊되, 그 아래로 떨어진 달이 있으면 축을 더 내려 잡는다.
+  const monthlyAxis = useMemo(
+    () => percentTicks(monthlyTrend.map((d) => d.ratePct)),
+    [monthlyTrend],
+  );
+
+  const deptAxis = useMemo(
+    () =>
+      percentTicks(
+        deptTrend.data.flatMap((row) =>
+          deptTrend.depts.map((d) => row[d] as number | null),
+        ),
+      ),
+    [deptTrend],
+  );
+
   const processRate = useMemo(() => {
     const byProcess = new Map<string, PlanRecord[]>();
     for (const r of filtered) {
@@ -276,6 +307,13 @@ export default function ProductionPlanPage() {
       }))
       .sort((a, b) => b.count - a.count);
   }, [filtered, failTypeMode]);
+
+  // 파이 레이블이 겹치기 시작하는 지점. 위 목록이 비중 내림차순이라 이 index
+  // 이후는 전부 "작은 조각"이다. 해당 없으면 -1.
+  const smallSliceFrom = useMemo(
+    () => failTypeBreakdown.findIndex((d) => d.value < 5),
+    [failTypeBreakdown],
+  );
 
   const missDetail = useMemo(() => {
     return filtered
@@ -379,13 +417,14 @@ export default function ProductionPlanPage() {
                 interval="preserveStartEnd"
               />
               <YAxis
-                domain={[0, 100]}
+                domain={monthlyAxis.domain}
+                ticks={monthlyAxis.ticks}
                 tick={{ fill: axisColor, fontSize: 11 }}
-                tickFormatter={(v) => `${v}%`}
+                tickFormatter={labelPercent}
               />
-              <Tooltip
+              <Tooltip {...TOOLTIP_PROPS}
                 formatter={(v, _n, item) => [
-                  `${v}% (${item?.payload?.count ?? 0}건)`,
+                  `${labelPercent(v)} (${labelNumber(item?.payload?.count ?? 0)}건)`,
                   "달성률",
                 ]}
               />
@@ -421,11 +460,12 @@ export default function ProductionPlanPage() {
                 interval="preserveStartEnd"
               />
               <YAxis
-                domain={[0, 100]}
+                domain={deptAxis.domain}
+                ticks={deptAxis.ticks}
                 tick={{ fill: axisColor, fontSize: 11 }}
-                tickFormatter={(v) => `${v}%`}
+                tickFormatter={labelPercent}
               />
-              <Tooltip formatter={labelPercent} />
+              <Tooltip {...TOOLTIP_PROPS} formatter={labelPercent} />
               <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
               {deptTrend.depts.map((dept, i) => (
                 <Line
@@ -464,7 +504,7 @@ export default function ProductionPlanPage() {
                 width={130}
                 tick={{ fill: axisColor, fontSize: 10 }}
               />
-              <Tooltip
+              <Tooltip {...TOOLTIP_PROPS}
                 formatter={(v, _n, item) => [
                   `${v}% (${item?.payload?.count ?? 0}건)`,
                   "달성률",
@@ -526,18 +566,25 @@ export default function ProductionPlanPage() {
                   nameKey="name"
                   outerRadius={130}
                   label={(props) => {
-                    const { x, y, cx, name, value } = props as {
+                    const { x, y, cx, name, value, index } = props as {
                       x: number;
                       y: number;
                       cx: number;
                       name: string;
                       value: number;
+                      index: number;
                     };
-                    if (value < 3) return <g />;
+                    // 작은 조각들은 지시선 끝이 거의 같은 자리에 몰려 글자가
+                    // 겹친다. 목록이 비중 내림차순이라 작은 것들은 뒤에 모여
+                    // 있으므로, 그 안에서의 순번만큼 아래로 밀어 떼어놓는다.
+                    const offset =
+                      smallSliceFrom >= 0 && index >= smallSliceFrom
+                        ? (index - smallSliceFrom) * 15
+                        : 0;
                     return (
                       <text
                         x={x}
-                        y={y}
+                        y={y + offset}
                         fill={labelColor}
                         fontSize={11}
                         textAnchor={x > cx ? "start" : "end"}
@@ -558,10 +605,12 @@ export default function ProductionPlanPage() {
                     />
                   ))}
                 </Pie>
-                <Tooltip
+                <Tooltip {...TOOLTIP_PROPS}
                   formatter={(v, _n, item) => [
-                    `${v}% (${item?.payload?.count ?? 0}건)`,
-                    "비중",
+                    `${labelPercent(v)} (${labelNumber(item?.payload?.count ?? 0)}건)`,
+                    // 두 번째 값이 팝업에 표시되는 항목명. "비중" 이라고만
+                    // 두면 어느 유형인지 알 수 없어 유형명을 그대로 쓴다.
+                    String(item?.payload?.name ?? "비중"),
                   ]}
                 />
                 <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
@@ -583,14 +632,15 @@ export default function ProductionPlanPage() {
         </div>
         <div className="max-h-96 overflow-auto">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-background">
-              <tr className="border-b border-black/10 text-left dark:border-white/10">
+            {/* sticky 헤더라 배경이 불투명해야 스크롤된 행이 비쳐 보이지 않는다. */}
+            <thead className="sticky top-0 bg-neutral-100 dark:bg-neutral-800">
+              <tr className="border-b border-black/10 text-center dark:border-white/10">
                 <th className="px-3 py-2 font-medium">실적일</th>
                 <th className="px-3 py-2 font-medium">부서</th>
                 <th className="px-3 py-2 font-medium">공정</th>
                 <th className="px-3 py-2 font-medium">품번</th>
-                <th className="px-3 py-2 text-right font-medium">계획</th>
-                <th className="px-3 py-2 text-right font-medium">실적</th>
+                <th className="px-3 py-2 font-medium">계획</th>
+                <th className="px-3 py-2 font-medium">실적</th>
                 <th className="px-3 py-2 font-medium">미달유형</th>
                 <th className="px-3 py-2 font-medium">미달사유</th>
               </tr>
@@ -614,10 +664,10 @@ export default function ProductionPlanPage() {
                     {r.part_number ?? "-"}
                   </td>
                   <td className="px-3 py-1.5 text-right">
-                    {r.plan_qty ?? "-"}
+                    {qty(r.plan_qty)}
                   </td>
                   <td className="px-3 py-1.5 text-right">
-                    {r.actual_qty ?? "-"}
+                    {qty(r.actual_qty)}
                   </td>
                   <td className="whitespace-nowrap px-3 py-1.5">
                     {r.fail_type ?? "-"}

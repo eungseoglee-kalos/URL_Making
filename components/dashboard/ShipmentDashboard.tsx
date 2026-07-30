@@ -18,6 +18,7 @@ import {
   LabelList,
 } from "recharts";
 import { createClient } from "@/lib/supabase/client";
+import { TOOLTIP_PROPS } from "@/lib/chart";
 import { useIsDark } from "@/lib/use-is-dark";
 import LastSyncBadge from "./LastSyncBadge";
 import { periodDefaults } from "@/lib/period";
@@ -425,7 +426,7 @@ export default function ShipmentDashboard({
                   tick={{ fill: axisColor, fontSize: 11 }}
                   tickFormatter={labelNumber}
                 />
-                <Tooltip formatter={labelNumber} />
+                <Tooltip {...TOOLTIP_PROPS} formatter={labelNumber} />
                 <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
                 <Bar dataKey={CATEGORY_DEV} name="개발" fill={COLOR_DEV}>
                   <LabelList
@@ -475,7 +476,7 @@ export default function ShipmentDashboard({
                 tick={{ fill: axisColor, fontSize: 11 }}
                 tickFormatter={labelNumber}
               />
-              <Tooltip formatter={labelNumber} />
+              <Tooltip {...TOOLTIP_PROPS} formatter={labelNumber} />
               <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
               <Bar dataKey={CATEGORY_DEV} name="개발" fill={COLOR_DEV}>
                 <LabelList
@@ -525,7 +526,7 @@ export default function ShipmentDashboard({
                   tick={{ fill: axisColor, fontSize: 11 }}
                   tickFormatter={labelNumber}
                 />
-                <Tooltip formatter={labelNumber} />
+                <Tooltip {...TOOLTIP_PROPS} formatter={labelNumber} />
                 <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
                 {vendorTrend.vendors.map((v, i) => (
                   <Bar
@@ -592,7 +593,7 @@ export default function ShipmentDashboard({
                     />
                   ))}
                 </Pie>
-                <Tooltip formatter={labelNumber} />
+                <Tooltip {...TOOLTIP_PROPS} formatter={labelNumber} />
               </PieChart>
             </ResponsiveContainer>
           )}
@@ -617,7 +618,7 @@ export default function ShipmentDashboard({
                   width={110}
                   tick={{ fill: axisColor, fontSize: 10 }}
                 />
-                <Tooltip formatter={labelNumber} />
+                <Tooltip {...TOOLTIP_PROPS} formatter={labelNumber} />
                 <Bar dataKey="qty" name="출하량" fill={COLOR_DEV}>
                   <LabelList
                     dataKey="qty"
@@ -644,7 +645,7 @@ export default function ShipmentDashboard({
                 tick={{ fill: axisColor, fontSize: 11 }}
                 tickFormatter={labelNumber}
               />
-              <Tooltip formatter={labelNumber} />
+              <Tooltip {...TOOLTIP_PROPS} formatter={labelNumber} />
               <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
               {vendorMonthlyAvg.years.map((y, i) => (
                 <Bar
