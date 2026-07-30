@@ -20,6 +20,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useIsDark } from "@/lib/use-is-dark";
 import { periodDefaults } from "@/lib/period";
+import { labelNumber, labelPercent } from "@/lib/format";
 import LastSyncBadge from "@/components/dashboard/LastSyncBadge";
 
 type CoatingRecord = {
@@ -391,7 +392,7 @@ export default function CoatingPage() {
               name="생산수량"
               fill="#60a5fa"
             >
-              <LabelList dataKey="total" position="top" fill={labelColor} fontSize={11} />
+              <LabelList dataKey="total" position="top" fill={labelColor} fontSize={11} formatter={labelNumber} />
             </Bar>
             <Line
               yAxisId="right"
@@ -406,7 +407,7 @@ export default function CoatingPage() {
                 position="top"
                 fill={labelColor}
                 fontSize={11}
-                formatter={(v) => `${v}%`}
+                formatter={labelPercent}
               />
             </Line>
             <Line
@@ -424,7 +425,7 @@ export default function CoatingPage() {
                 position="bottom"
                 fill={labelColor}
                 fontSize={11}
-                formatter={(v) => `${v}%`}
+                formatter={labelPercent}
               />
             </Line>
           </ComposedChart>
@@ -445,7 +446,7 @@ export default function CoatingPage() {
                   position="top"
                   fill={labelColor}
                   fontSize={12}
-                  formatter={(v) => `${v}%`}
+                  formatter={labelPercent}
                 />
               </Bar>
             </BarChart>
@@ -514,7 +515,7 @@ export default function CoatingPage() {
                   position="right"
                   fill={labelColor}
                   fontSize={11}
-                  formatter={(v) => `${v}%`}
+                  formatter={labelPercent}
                 />
               </Bar>
             </BarChart>

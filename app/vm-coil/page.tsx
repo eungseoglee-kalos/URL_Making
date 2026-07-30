@@ -21,6 +21,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useIsDark } from "@/lib/use-is-dark";
 import LastSyncBadge from "@/components/dashboard/LastSyncBadge";
 import { periodDefaults } from "@/lib/period";
+import { labelNumber, labelPercent } from "@/lib/format";
 
 type Shipment = {
   ship_date: string;
@@ -375,13 +376,13 @@ export default function VmCoilPage() {
               <Tooltip />
               <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
               <Bar dataKey="KBM" fill={COLOR_KBM}>
-                <LabelList dataKey="KBM" position="top" fill={labelColor} fontSize={10} />
+                <LabelList dataKey="KBM" position="top" fill={labelColor} fontSize={10} formatter={labelNumber} />
               </Bar>
               <Bar dataKey="외주" fill={COLOR_OUT}>
-                <LabelList dataKey="외주" position="top" fill={labelColor} fontSize={10} />
+                <LabelList dataKey="외주" position="top" fill={labelColor} fontSize={10} formatter={labelNumber} />
               </Bar>
               <Line dataKey="합계" stroke={COLOR_TOTAL} strokeWidth={2} dot={{ r: 3 }} connectNulls>
-                <LabelList dataKey="합계" position="top" fill={labelColor} fontSize={10} />
+                <LabelList dataKey="합계" position="top" fill={labelColor} fontSize={10} formatter={labelNumber} />
               </Line>
             </ComposedChart>
           </ResponsiveContainer>
@@ -400,13 +401,13 @@ export default function VmCoilPage() {
                 <Tooltip />
                 <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
                 <Bar dataKey="KBM" fill={COLOR_KBM}>
-                  <LabelList dataKey="KBM" position="top" fill={labelColor} fontSize={9} />
+                  <LabelList dataKey="KBM" position="top" fill={labelColor} fontSize={9} formatter={labelNumber} />
                 </Bar>
                 <Bar dataKey="외주" fill={COLOR_OUT}>
-                  <LabelList dataKey="외주" position="top" fill={labelColor} fontSize={9} />
+                  <LabelList dataKey="외주" position="top" fill={labelColor} fontSize={9} formatter={labelNumber} />
                 </Bar>
                 <Line dataKey="합계" stroke={COLOR_TOTAL} strokeWidth={2} dot={{ r: 3 }} connectNulls>
-                  <LabelList dataKey="합계" position="top" fill={labelColor} fontSize={9} />
+                  <LabelList dataKey="합계" position="top" fill={labelColor} fontSize={9} formatter={labelNumber} />
                 </Line>
               </ComposedChart>
             </ResponsiveContainer>
@@ -434,11 +435,11 @@ export default function VmCoilPage() {
                 <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
                 {yoy.pair.map((y, i) => (
                   <Bar key={y} yAxisId="left" dataKey={y} name={`${y}년`} fill={i === 0 ? COLOR_OUT : COLOR_KBM}>
-                    <LabelList dataKey={y} position="top" fill={labelColor} fontSize={9} />
+                    <LabelList dataKey={y} position="top" fill={labelColor} fontSize={9} formatter={labelNumber} />
                   </Bar>
                 ))}
                 <Line yAxisId="right" dataKey="증감율" stroke={COLOR_TOTAL} strokeWidth={2} dot={{ r: 3 }} connectNulls>
-                  <LabelList dataKey="증감율" position="top" fill={labelColor} fontSize={9} formatter={(v) => `${v}%`} />
+                  <LabelList dataKey="증감율" position="top" fill={labelColor} fontSize={9} formatter={labelPercent} />
                 </Line>
               </ComposedChart>
             </ResponsiveContainer>
@@ -454,13 +455,13 @@ export default function VmCoilPage() {
               <Tooltip />
               <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
               <Bar dataKey="출하량" fill={COLOR_KBM}>
-                <LabelList dataKey="출하량" position="top" fill={labelColor} fontSize={10} />
+                <LabelList dataKey="출하량" position="top" fill={labelColor} fontSize={10} formatter={labelNumber} />
               </Bar>
               <Bar dataKey="수주잔량" fill={COLOR_BACKLOG}>
-                <LabelList dataKey="수주잔량" position="top" fill={labelColor} fontSize={10} />
+                <LabelList dataKey="수주잔량" position="top" fill={labelColor} fontSize={10} formatter={labelNumber} />
               </Bar>
               <Bar dataKey="예상출하량" fill={COLOR_FORECAST}>
-                <LabelList dataKey="예상출하량" position="top" fill={labelColor} fontSize={10} />
+                <LabelList dataKey="예상출하량" position="top" fill={labelColor} fontSize={10} formatter={labelNumber} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -481,13 +482,13 @@ export default function VmCoilPage() {
                 <Tooltip />
                 <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
                 <Bar dataKey="KBM" fill={COLOR_KBM}>
-                  <LabelList dataKey="KBM" position="top" fill={labelColor} fontSize={9} />
+                  <LabelList dataKey="KBM" position="top" fill={labelColor} fontSize={9} formatter={labelNumber} />
                 </Bar>
                 <Bar dataKey="외주" fill={COLOR_OUT}>
-                  <LabelList dataKey="외주" position="top" fill={labelColor} fontSize={9} />
+                  <LabelList dataKey="외주" position="top" fill={labelColor} fontSize={9} formatter={labelNumber} />
                 </Bar>
                 <Line dataKey="합계" stroke={COLOR_TOTAL} strokeWidth={2} dot={{ r: 3 }} connectNulls>
-                  <LabelList dataKey="합계" position="top" fill={labelColor} fontSize={9} />
+                  <LabelList dataKey="합계" position="top" fill={labelColor} fontSize={9} formatter={labelNumber} />
                 </Line>
               </ComposedChart>
             </ResponsiveContainer>
@@ -548,7 +549,7 @@ function RatioPie({
                 textAnchor={x > cx ? "start" : "end"}
                 dominantBaseline="central"
               >
-                {`${payload.pct}%`}
+                {labelPercent(payload.pct)}
               </text>
             );
           }}

@@ -21,6 +21,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useIsDark } from "@/lib/use-is-dark";
 import LastSyncBadge from "./LastSyncBadge";
 import { periodDefaults } from "@/lib/period";
+import { labelNumber, labelPercent } from "@/lib/format";
 
 type ShipmentRecord = {
   ship_date: string;
@@ -410,58 +411,71 @@ export default function ShipmentDashboard({
         <KpiCard label="수주입력일" value={kpi.lastOrder} color="indigo" />
       </div>
 
-      {/* 2열 3행. 같은 행의 카드 높이가 맞도록 차트 높이를 320 으로 통일했다. */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <ChartCard title={monthlyChartTitle} note={`${year}년 · 월 필터 무시`}>
-          <ResponsiveContainer width="100%" height={320}>
-            <ComposedChart data={monthlyTrend} margin={{ top: 20, right: 12 }}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-              <XAxis dataKey="month" tick={{ fill: axisColor, fontSize: 11 }} />
-              <YAxis tick={{ fill: axisColor, fontSize: 11 }} />
-              <Tooltip />
-              <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
-              <Bar dataKey={CATEGORY_DEV} name="개발" fill={COLOR_DEV}>
-                <LabelList
-                  dataKey={CATEGORY_DEV}
-                  position="top"
-                  fill={labelColor}
-                  fontSize={9}
+      {/* 좌 2 : 우 1 의 3행. 왼쪽은 12개월치를 그리는 차트라 폭이 더 필요하고,
+          오른쪽은 항목이 두어 개뿐이라 좁아도 읽힌다. 같은 행의 카드 높이를
+          맞추려고 차트 높이는 320 으로 통일했다. */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <div className="xl:col-span-2">
+          <ChartCard title={monthlyChartTitle} note={`${year}년 · 월 필터 무시`}>
+            <ResponsiveContainer width="100%" height={320}>
+              <ComposedChart data={monthlyTrend} margin={{ top: 20, right: 12 }}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis dataKey="month" tick={{ fill: axisColor, fontSize: 11 }} />
+                <YAxis
+                  tick={{ fill: axisColor, fontSize: 11 }}
+                  tickFormatter={labelNumber}
                 />
-              </Bar>
-              <Bar dataKey={CATEGORY_MASS} name="양산" fill={COLOR_MASS}>
-                <LabelList
-                  dataKey={CATEGORY_MASS}
-                  position="top"
-                  fill={labelColor}
-                  fontSize={9}
-                />
-              </Bar>
-              <Line
-                dataKey="total"
-                name="총출하량"
-                stroke={COLOR_TOTAL}
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                connectNulls
-              >
-                <LabelList
+                <Tooltip formatter={labelNumber} />
+                <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
+                <Bar dataKey={CATEGORY_DEV} name="개발" fill={COLOR_DEV}>
+                  <LabelList
+                    dataKey={CATEGORY_DEV}
+                    position="top"
+                    fill={labelColor}
+                    fontSize={10}
+                    formatter={labelNumber}
+                  />
+                </Bar>
+                <Bar dataKey={CATEGORY_MASS} name="양산" fill={COLOR_MASS}>
+                  <LabelList
+                    dataKey={CATEGORY_MASS}
+                    position="top"
+                    fill={labelColor}
+                    fontSize={10}
+                    formatter={labelNumber}
+                  />
+                </Bar>
+                <Line
                   dataKey="total"
-                  position="top"
-                  fill={labelColor}
-                  fontSize={9}
-                />
-              </Line>
-            </ComposedChart>
-          </ResponsiveContainer>
-        </ChartCard>
+                  name="총출하량"
+                  stroke={COLOR_TOTAL}
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  connectNulls
+                >
+                  <LabelList
+                    dataKey="total"
+                    position="top"
+                    fill={labelColor}
+                    fontSize={10}
+                    formatter={labelNumber}
+                  />
+                </Line>
+              </ComposedChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        </div>
 
         <ChartCard title="월별 예상 출하량" note="모든 필터 적용">
           <ResponsiveContainer width="100%" height={320}>
             <ComposedChart data={forecastSplit} margin={{ top: 20, right: 12 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
               <XAxis dataKey="name" tick={{ fill: axisColor, fontSize: 11 }} />
-              <YAxis tick={{ fill: axisColor, fontSize: 11 }} />
-              <Tooltip />
+              <YAxis
+                tick={{ fill: axisColor, fontSize: 11 }}
+                tickFormatter={labelNumber}
+              />
+              <Tooltip formatter={labelNumber} />
               <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
               <Bar dataKey={CATEGORY_DEV} name="개발" fill={COLOR_DEV}>
                 <LabelList
@@ -469,6 +483,7 @@ export default function ShipmentDashboard({
                   position="top"
                   fill={labelColor}
                   fontSize={11}
+                  formatter={labelNumber}
                 />
               </Bar>
               <Bar dataKey={CATEGORY_MASS} name="양산" fill={COLOR_MASS}>
@@ -477,6 +492,7 @@ export default function ShipmentDashboard({
                   position="top"
                   fill={labelColor}
                   fontSize={11}
+                  formatter={labelNumber}
                 />
               </Bar>
               <Line
@@ -492,39 +508,46 @@ export default function ShipmentDashboard({
                   position="top"
                   fill={labelColor}
                   fontSize={11}
+                  formatter={labelNumber}
                 />
               </Line>
             </ComposedChart>
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title={vendorChartTitle} note={`${year}년 · 월 필터 무시`}>
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={vendorTrend.data} margin={{ top: 20, right: 12 }}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-              <XAxis dataKey="month" tick={{ fill: axisColor, fontSize: 11 }} />
-              <YAxis tick={{ fill: axisColor, fontSize: 11 }} />
-              <Tooltip />
-              <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
-              {vendorTrend.vendors.map((v, i) => (
-                <Bar
-                  key={v}
-                  dataKey={v}
-                  name={v}
-                  stackId="vendor"
-                  fill={vendorColor(v, i)}
-                >
-                  <LabelList
+        <div className="xl:col-span-2">
+          <ChartCard title={vendorChartTitle} note={`${year}년 · 월 필터 무시`}>
+            <ResponsiveContainer width="100%" height={320}>
+              <BarChart data={vendorTrend.data} margin={{ top: 20, right: 12 }}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis dataKey="month" tick={{ fill: axisColor, fontSize: 11 }} />
+                <YAxis
+                  tick={{ fill: axisColor, fontSize: 11 }}
+                  tickFormatter={labelNumber}
+                />
+                <Tooltip formatter={labelNumber} />
+                <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
+                {vendorTrend.vendors.map((v, i) => (
+                  <Bar
+                    key={v}
                     dataKey={v}
-                    position="center"
-                    fill="#ffffff"
-                    fontSize={9}
-                  />
-                </Bar>
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
+                    name={v}
+                    stackId="vendor"
+                    fill={vendorColor(v, i)}
+                  >
+                    <LabelList
+                      dataKey={v}
+                      position="center"
+                      fill="#ffffff"
+                      fontSize={10}
+                      formatter={labelNumber}
+                    />
+                  </Bar>
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        </div>
 
         <ChartCard title="양산 vs. 개발" note="모든 필터 적용">
           {categorySplit.length === 0 ? (
@@ -538,8 +561,8 @@ export default function ShipmentDashboard({
                   data={categorySplit}
                   dataKey="value"
                   nameKey="name"
-                  innerRadius={70}
-                  outerRadius={110}
+                  innerRadius={58}
+                  outerRadius={92}
                   label={(props) => {
                     const { x, y, cx, name, payload } = props as {
                       x: number;
@@ -557,7 +580,7 @@ export default function ShipmentDashboard({
                         textAnchor={x > cx ? "start" : "end"}
                         dominantBaseline="central"
                       >
-                        {`${name} ${payload.pct}%`}
+                        {`${name} ${labelPercent(payload.pct)}`}
                       </text>
                     );
                   }}
@@ -569,38 +592,45 @@ export default function ShipmentDashboard({
                     />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={labelNumber} />
               </PieChart>
             </ResponsiveContainer>
           )}
         </ChartCard>
 
-        <ChartCard title="품번별 출하량" note="모든 필터 적용 · 상위 12">
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart
-              data={partRanking}
-              layout="vertical"
-              margin={{ right: 48 }}
-            >
-              <XAxis type="number" tick={{ fill: axisColor, fontSize: 11 }} />
-              <YAxis
-                type="category"
-                dataKey="part"
-                width={110}
-                tick={{ fill: axisColor, fontSize: 10 }}
-              />
-              <Tooltip />
-              <Bar dataKey="qty" name="출하량" fill={COLOR_DEV}>
-                <LabelList
-                  dataKey="qty"
-                  position="right"
-                  fill={labelColor}
-                  fontSize={10}
+        <div className="xl:col-span-2">
+          <ChartCard title="품번별 출하량" note="모든 필터 적용 · 상위 12">
+            <ResponsiveContainer width="100%" height={320}>
+              <BarChart
+                data={partRanking}
+                layout="vertical"
+                margin={{ right: 48 }}
+              >
+                <XAxis
+                  type="number"
+                  tick={{ fill: axisColor, fontSize: 11 }}
+                  tickFormatter={labelNumber}
                 />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
+                <YAxis
+                  type="category"
+                  dataKey="part"
+                  width={110}
+                  tick={{ fill: axisColor, fontSize: 10 }}
+                />
+                <Tooltip formatter={labelNumber} />
+                <Bar dataKey="qty" name="출하량" fill={COLOR_DEV}>
+                  <LabelList
+                    dataKey="qty"
+                    position="right"
+                    fill={labelColor}
+                    fontSize={10}
+                    formatter={labelNumber}
+                  />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        </div>
 
         <ChartCard
           title="월평균 수량 비교"
@@ -610,8 +640,11 @@ export default function ShipmentDashboard({
             <BarChart data={vendorMonthlyAvg.data} margin={{ top: 20 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
               <XAxis dataKey="vendor" tick={{ fill: axisColor, fontSize: 10 }} />
-              <YAxis tick={{ fill: axisColor, fontSize: 11 }} />
-              <Tooltip />
+              <YAxis
+                tick={{ fill: axisColor, fontSize: 11 }}
+                tickFormatter={labelNumber}
+              />
+              <Tooltip formatter={labelNumber} />
               <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
               {vendorMonthlyAvg.years.map((y, i) => (
                 <Bar
@@ -625,6 +658,7 @@ export default function ShipmentDashboard({
                     position="top"
                     fill={labelColor}
                     fontSize={10}
+                    formatter={labelNumber}
                   />
                 </Bar>
               ))}

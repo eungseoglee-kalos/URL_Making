@@ -26,6 +26,8 @@ import {
 } from "@/lib/fail-type";
 import LastSyncBadge from "@/components/dashboard/LastSyncBadge";
 import { periodDefaults } from "@/lib/period";
+// 이 화면의 차트 레이블은 전부 백분율이라 labelNumber 는 쓰지 않는다.
+import { labelPercent } from "@/lib/format";
 
 type PlanRecord = {
   record_date: string;
@@ -399,7 +401,7 @@ export default function ProductionPlanPage() {
                   position="top"
                   fill={labelColor}
                   fontSize={10}
-                  formatter={(v) => `${v}%`}
+                  formatter={labelPercent}
                 />
               </Line>
             </LineChart>
@@ -423,7 +425,7 @@ export default function ProductionPlanPage() {
                 tick={{ fill: axisColor, fontSize: 11 }}
                 tickFormatter={(v) => `${v}%`}
               />
-              <Tooltip formatter={(v) => `${v}%`} />
+              <Tooltip formatter={labelPercent} />
               <Legend wrapperStyle={{ color: axisColor, fontSize: 11 }} />
               {deptTrend.depts.map((dept, i) => (
                 <Line
@@ -474,7 +476,7 @@ export default function ProductionPlanPage() {
                   position="right"
                   fill={labelColor}
                   fontSize={10}
-                  formatter={(v) => `${v}%`}
+                  formatter={labelPercent}
                 />
               </Bar>
             </BarChart>
@@ -541,7 +543,7 @@ export default function ProductionPlanPage() {
                         textAnchor={x > cx ? "start" : "end"}
                         dominantBaseline="central"
                       >
-                        {`${name} ${value}%`}
+                        {`${name} ${labelPercent(value)}`}
                       </text>
                     );
                   }}
