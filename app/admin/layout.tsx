@@ -2,6 +2,7 @@ import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import AppShell from "@/components/dashboard/AppShell";
 import { createClient } from "@/lib/supabase/server";
+import { getAccess } from "@/lib/access";
 
 export const runtime = "nodejs";
 
@@ -21,7 +22,8 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
-  if (user.email !== process.env.ADMIN_EMAIL) {
+  const { isAdmin } = await getAccess(supabase, user);
+  if (!isAdmin) {
     redirect("/");
   }
 

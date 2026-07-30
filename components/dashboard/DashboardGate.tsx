@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import AppShell from "./AppShell";
 import PendingApproval from "./PendingApproval";
 import { createClient } from "@/lib/supabase/server";
+import { getAccess } from "@/lib/access";
 
 /**
  * 대시보드 라우트의 공통 진입 관문: 로그인 확인 -> 승인 확인 -> AppShell.
@@ -24,15 +25,7 @@ export default async function DashboardGate({
     redirect("/login");
   }
 
-  const isAdmin = user.email === process.env.ADMIN_EMAIL;
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_approved")
-    .eq("id", user.id)
-    .single();
-
-  const isApproved = isAdmin || profile?.is_approved === true;
+  const { isAdmin, isApproved } = await getAccess(supabase, user);
 
   return (
     <AppShell email={user.email} isAdmin={isAdmin}>

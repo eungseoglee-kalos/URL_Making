@@ -1,7 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import ConfirmSubmitButton from "@/components/dashboard/ConfirmSubmitButton";
 import { INGEST_TARGETS } from "@/lib/ingest";
-import { approveUser, deleteMember, uploadExcel } from "./actions";
+import { isRootAdmin } from "@/lib/access";
+import { orderDashboards, type DashboardOrderRow } from "@/lib/dashboards";
+import {
+  approveUser,
+  deleteMember,
+  uploadExcel,
+  setMemberAdmin,
+  moveDashboard,
+} from "./actions";
 
 export const maxDuration = 60;
 
@@ -20,10 +28,22 @@ export default async function AdminPage({
 
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const currentUserId = user?.id ?? null;
+
   const { data: profiles } = await supabase
     .from("profiles")
     .select("*")
     .order("created_at", { ascending: false });
+
+  const { data: savedOrder } = await supabase
+    .from("dashboard_order")
+    .select("href, sort_order")
+    .order("sort_order", { ascending: true });
+
+  const dashboards = orderDashboards(savedOrder as DashboardOrderRow[] | null);
 
   const pending = profiles?.filter((p) => !p.is_approved) ?? [];
   const approved = profiles?.filter((p) => p.is_approved) ?? [];
@@ -113,6 +133,56 @@ export default async function AdminPage({
 
       <div className="rounded-lg border border-black/10 dark:border-white/10">
         <div className="border-b border-black/10 px-4 py-3 dark:border-white/10">
+          <h2 className="text-sm font-semibold">대시보드 순서</h2>
+          <p className="mt-1 text-xs text-foreground/60">
+            대시보드 선택 화면에 나타나는 순서입니다. 카드 색은 위치에 따라
+            정해지므로 순서를 바꾸면 색도 함께 바뀝니다.
+          </p>
+        </div>
+        <ul className="divide-y divide-black/10 dark:divide-white/10">
+          {dashboards.map((d, i) => (
+            <li
+              key={d.href}
+              className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm"
+            >
+              <div className="min-w-0">
+                <span className="mr-2 text-foreground/40">{i + 1}</span>
+                <span className="font-medium">{d.title}</span>
+                <span className="ml-2 text-xs text-foreground/50">
+                  {d.href}
+                </span>
+              </div>
+              <div className="flex shrink-0 gap-1">
+                <form action={moveDashboard}>
+                  <input type="hidden" name="href" value={d.href} />
+                  <input type="hidden" name="direction" value="up" />
+                  <button
+                    disabled={i === 0}
+                    aria-label={`${d.title} 위로`}
+                    className="rounded-md border border-black/10 px-2.5 py-1 text-xs disabled:opacity-30 dark:border-white/10"
+                  >
+                    ▲
+                  </button>
+                </form>
+                <form action={moveDashboard}>
+                  <input type="hidden" name="href" value={d.href} />
+                  <input type="hidden" name="direction" value="down" />
+                  <button
+                    disabled={i === dashboards.length - 1}
+                    aria-label={`${d.title} 아래로`}
+                    className="rounded-md border border-black/10 px-2.5 py-1 text-xs disabled:opacity-30 dark:border-white/10"
+                  >
+                    ▼
+                  </button>
+                </form>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="rounded-lg border border-black/10 dark:border-white/10">
+        <div className="border-b border-black/10 px-4 py-3 dark:border-white/10">
           <h2 className="text-sm font-semibold">승인됨 ({approved.length})</h2>
           <p className="mt-1 text-xs text-foreground/60">
             비밀번호를 잊은 사용자는 계정을 삭제한 뒤 다시 가입하도록
@@ -128,10 +198,36 @@ export default async function AdminPage({
             {approved.map((p) => (
               <li
                 key={p.id}
-                className="flex items-center justify-between px-4 py-3 text-sm"
+                className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm"
               >
-                <span className="text-foreground/60">{p.email}</span>
+                <span className="flex items-center gap-2">
+                  <span className="text-foreground/60">{p.email}</span>
+                  {isRootAdmin(p.email) ? (
+                    <span className="rounded-full bg-foreground px-2 py-0.5 text-[11px] font-medium text-background">
+                      기본 관리자
+                    </span>
+                  ) : (
+                    p.is_admin && (
+                      <span className="rounded-full border border-foreground/30 px-2 py-0.5 text-[11px] font-medium">
+                        관리자
+                      </span>
+                    )
+                  )}
+                </span>
                 <div className="flex items-center gap-2">
+                  {!isRootAdmin(p.email) && p.id !== currentUserId && (
+                    <form action={setMemberAdmin}>
+                      <input type="hidden" name="user_id" value={p.id} />
+                      <input
+                        type="hidden"
+                        name="grant"
+                        value={p.is_admin ? "0" : "1"}
+                      />
+                      <button className="rounded-md border border-black/10 px-3 py-1.5 text-xs font-medium dark:border-white/10">
+                        {p.is_admin ? "관리자 해제" : "관리자 지정"}
+                      </button>
+                    </form>
+                  )}
                   <form action={deleteMember}>
                     <input type="hidden" name="user_id" value={p.id} />
                     <ConfirmSubmitButton

@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ingestWorkbook, IngestError } from "@/lib/ingest";
+import { getAccess, isRootAdmin } from "@/lib/access";
+import { orderDashboards, type DashboardOrderRow } from "@/lib/dashboards";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -12,23 +14,112 @@ async function requireAdmin() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user?.email !== process.env.ADMIN_EMAIL) {
-    redirect("/");
-  }
+  if (!user) redirect("/login");
 
-  return supabase;
+  const { isAdmin } = await getAccess(supabase, user);
+  if (!isAdmin) redirect("/");
+
+  return { supabase, user };
 }
 
+// profiles 쓰기는 전부 서비스 롤로 한다. 세션 클라이언트로 남의 행을 고치려면
+// authenticated 에게 UPDATE 를 열어줘야 하는데, 그러면 아무 회원이나 REST 로
+// 자기 is_admin 을 켤 수 있다.
 export async function approveUser(formData: FormData) {
-  const supabase = await requireAdmin();
+  await requireAdmin();
   const userId = formData.get("user_id") as string;
 
-  await supabase
+  const { error } = await createAdminClient()
     .from("profiles")
     .update({ is_approved: true })
     .eq("id", userId);
 
+  if (error) {
+    redirect("/admin?adminError=" + encodeURIComponent(error.message));
+  }
+
   revalidatePath("/admin");
+}
+
+export async function setMemberAdmin(formData: FormData) {
+  const { user } = await requireAdmin();
+  const userId = formData.get("user_id") as string;
+  const grant = formData.get("grant") === "1";
+
+  const admin = createAdminClient();
+  const { data: target } = await admin
+    .from("profiles")
+    .select("email")
+    .eq("id", userId)
+    .single();
+
+  const fail = (message: string) => {
+    redirect("/admin?adminError=" + encodeURIComponent(message));
+  };
+
+  // ADMIN_EMAIL 계정은 코드가 항상 관리자로 치므로 플래그를 만져봐야 표시만
+  // 어긋난다. 자기 자신은 실수로 내려서 화면을 잃는 일이 흔해 막아둔다.
+  if (isRootAdmin(target?.email)) {
+    fail("기본 관리자 계정의 권한은 변경할 수 없습니다.");
+  }
+  if (userId === user.id) {
+    fail("자기 자신의 관리자 권한은 해제할 수 없습니다.");
+  }
+
+  const { error } = await admin
+    .from("profiles")
+    .update({ is_admin: grant, ...(grant ? { is_approved: true } : {}) })
+    .eq("id", userId);
+
+  if (error) fail(error.message);
+
+  revalidatePath("/admin");
+  revalidatePath("/");
+  redirect(
+    "/admin?adminMessage=" +
+      encodeURIComponent(
+        `${target?.email ?? "계정"} 을(를) ${grant ? "관리자로 지정" : "일반 사용자로 변경"}했습니다.`,
+      ),
+  );
+}
+
+export async function moveDashboard(formData: FormData) {
+  await requireAdmin();
+  const href = formData.get("href") as string;
+  const direction = formData.get("direction") === "up" ? -1 : 1;
+
+  const admin = createAdminClient();
+  const { data: saved } = await admin
+    .from("dashboard_order")
+    .select("href, sort_order")
+    .order("sort_order", { ascending: true });
+
+  const current = orderDashboards(saved as DashboardOrderRow[] | null);
+  const from = current.findIndex((d) => d.href === href);
+  const to = from + direction;
+  if (from === -1 || to < 0 || to >= current.length) {
+    redirect("/admin");
+  }
+
+  const next = [...current];
+  [next[from], next[to]] = [next[to], next[from]];
+
+  // 전체를 다시 적어야 저장된 적 없는 항목까지 자리를 얻는다.
+  const { error } = await admin.from("dashboard_order").upsert(
+    next.map((d, i) => ({
+      href: d.href,
+      sort_order: i,
+      updated_at: new Date().toISOString(),
+    })),
+    { onConflict: "href" },
+  );
+
+  if (error) {
+    redirect("/admin?adminError=" + encodeURIComponent(error.message));
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/");
 }
 
 export async function deleteMember(formData: FormData) {
@@ -54,7 +145,7 @@ export async function deleteMember(formData: FormData) {
  * 적용된다. 업로드 칸을 종류별로 나눌 필요가 없어졌다.
  */
 export async function uploadExcel(formData: FormData) {
-  const supabase = await requireAdmin();
+  const { supabase } = await requireAdmin();
 
   const file = formData.get("excel");
   if (!(file instanceof File) || file.size === 0) {
