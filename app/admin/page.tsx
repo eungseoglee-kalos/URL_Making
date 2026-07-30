@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import ConfirmSubmitButton from "@/components/dashboard/ConfirmSubmitButton";
+import UploadExcelForm from "@/components/dashboard/UploadExcelForm";
 import { INGEST_TARGETS } from "@/lib/ingest";
 import { isRootAdmin } from "@/lib/access";
 import { orderDashboards, type DashboardOrderRow } from "@/lib/dashboards";
@@ -59,21 +60,7 @@ export default async function AdminPage({
         <p className="mb-3 text-xs text-foreground/50">
           인식하는 시트: {INGEST_TARGETS.map((t) => t.sheet).join(", ")}
         </p>
-        <form
-          action={uploadExcel}
-          className="flex flex-col gap-2 sm:flex-row sm:items-center"
-        >
-          <input
-            type="file"
-            name="excel"
-            accept=".xlsx,.xls"
-            required
-            className="text-sm"
-          />
-          <button className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background">
-            업로드
-          </button>
-        </form>
+        <UploadExcelForm action={uploadExcel} />
         {uploadError && (
           <p className="mt-2 text-sm text-red-600 dark:text-red-400">
             {uploadError}
