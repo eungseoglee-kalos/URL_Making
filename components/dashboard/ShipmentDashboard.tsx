@@ -441,7 +441,14 @@ export default function ShipmentDashboard({
               strokeWidth={2}
               dot={{ r: 3 }}
               connectNulls
-            />
+            >
+              <LabelList
+                dataKey="total"
+                position="top"
+                fill={labelColor}
+                fontSize={10}
+              />
+            </Line>
           </ComposedChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -511,7 +518,14 @@ export default function ShipmentDashboard({
                 strokeWidth={2}
                 dot={{ r: 3 }}
                 connectNulls
-              />
+              >
+                <LabelList
+                  dataKey="total"
+                  position="top"
+                  fill={labelColor}
+                  fontSize={11}
+                />
+              </Line>
             </ComposedChart>
           </ResponsiveContainer>
         </ChartCard>

@@ -486,7 +486,9 @@ export default function VmCoilPage() {
                 <Bar dataKey="외주" fill={COLOR_OUT}>
                   <LabelList dataKey="외주" position="top" fill={labelColor} fontSize={9} />
                 </Bar>
-                <Line dataKey="합계" stroke={COLOR_TOTAL} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                <Line dataKey="합계" stroke={COLOR_TOTAL} strokeWidth={2} dot={{ r: 3 }} connectNulls>
+                  <LabelList dataKey="합계" position="top" fill={labelColor} fontSize={9} />
+                </Line>
               </ComposedChart>
             </ResponsiveContainer>
           </ChartCard>

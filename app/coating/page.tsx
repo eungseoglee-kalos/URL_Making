@@ -400,7 +400,15 @@ export default function CoatingPage() {
               stroke="#1e3a8a"
               strokeWidth={2}
               dot={false}
-            />
+            >
+              <LabelList
+                dataKey="passRatePct"
+                position="top"
+                fill={labelColor}
+                fontSize={11}
+                formatter={(v) => `${v}%`}
+              />
+            </Line>
             <Line
               yAxisId="right"
               dataKey="scrapRatePct"
@@ -408,7 +416,17 @@ export default function CoatingPage() {
               stroke="#f97316"
               strokeWidth={2}
               dot={false}
-            />
+            >
+              {/* 합격률은 높고 폐기율은 낮아 서로 멀지만, 폐기율이 0 근처라
+                  위에 붙이면 x축 눈금과 겹친다. 아래로 내려 피한다. */}
+              <LabelList
+                dataKey="scrapRatePct"
+                position="bottom"
+                fill={labelColor}
+                fontSize={11}
+                formatter={(v) => `${v}%`}
+              />
+            </Line>
           </ComposedChart>
         </ResponsiveContainer>
       </div>
