@@ -145,7 +145,14 @@ export async function deleteMember(formData: FormData) {
  * 적용된다. 업로드 칸을 종류별로 나눌 필요가 없어졌다.
  */
 export async function uploadExcel(formData: FormData) {
-  const { supabase } = await requireAdmin();
+  await requireAdmin();
+
+  // /api/ingest 와 같은 서비스 롤로 넣는다. 호출자 세션으로 넣으면 표마다
+  // authenticated 쓰기 정책이 있어야 하는데, coating_records 는 이 저장소가
+  // 생기기 전에 만들어져 그 정책이 없다. 그래서 관리자 화면에서만 코팅현황
+  // 업로드가 "row-level security policy" 오류로 막혔다. 관리자 확인은 바로
+  // 위에서 끝났으므로 여기서 RLS 를 우회해도 통제는 유지된다.
+  const supabase = createAdminClient();
 
   const file = formData.get("excel");
   if (!(file instanceof File) || file.size === 0) {
