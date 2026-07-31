@@ -209,6 +209,14 @@ export default function CoatingPage() {
       });
   }, [partFiltered]);
 
+  // 막대 눈금을 데이터에 딱 맞추면 가장 높은 달의 막대가 천장까지 닿아
+  // 합격률 선과 붙어버린다. 최대값 위로 30% 여유를 두되 100 단위로 올림하고,
+  // 생산량이 적은 달만 골라 봐도 그래프가 뭉개지지 않게 400 을 하한으로 둔다.
+  const qtyAxisMax = useMemo(() => {
+    const max = monthlyTrend.reduce((m, d) => Math.max(m, d.total), 0);
+    return Math.max(400, Math.ceil((max * 1.3) / 100) * 100);
+  }, [monthlyTrend]);
+
   const roundRate = useMemo(() => {
     return [1, 2, 3].map((round) => {
       const recs = filtered.filter((r) => r.round_no === round);
@@ -380,7 +388,12 @@ export default function CoatingPage() {
           <ComposedChart data={monthlyTrend}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
             <XAxis dataKey="month" tick={{ fill: axisColor, fontSize: 12 }} />
-            <YAxis yAxisId="left" tick={{ fill: axisColor, fontSize: 12 }} />
+            <YAxis
+              yAxisId="left"
+              domain={[0, qtyAxisMax]}
+              tick={{ fill: axisColor, fontSize: 12 }}
+              tickFormatter={labelNumber}
+            />
             <YAxis
               yAxisId="right"
               orientation="right"
