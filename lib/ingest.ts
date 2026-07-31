@@ -137,6 +137,18 @@ export async function replaceTable(
       );
     }
   }
+
+  // 비우기와 넣기가 한 덩어리로 묶여 있지 않아서, 같은 표에 업로드가 겹치면
+  // 한쪽이 비우는 사이 다른 쪽이 넣어 행이 뒤섞인 채 쌓인다. 2026-07-30 에
+  // 실제로 진공증착 표가 12,329행에서 29,316행으로 불어난 적이 있는데, 그때
+  // 화면에는 "성공"으로 떴다. 넣은 만큼 들어갔는지 마지막에 세어 확인한다.
+  const finalCount = await countRows(supabase, table);
+  if (finalCount !== rows.length) {
+    throw new IngestError(
+      `저장 결과가 맞지 않습니다 (넣으려던 ${rows.length.toLocaleString()}건 → 실제 ${finalCount.toLocaleString()}건). ` +
+        `업로드가 동시에 두 번 이상 실행됐을 수 있습니다. 잠시 뒤 한 번만 다시 올려주세요.`,
+    );
+  }
 }
 
 async function countRows(supabase: SupabaseClient, table: string) {
