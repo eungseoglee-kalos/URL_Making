@@ -199,7 +199,9 @@ export default function CoatingPage() {
         const scrap = recs.filter((r) => isScrap(r.final_verdict)).length;
         const rate = passRate(recs);
         return {
-          month: key.slice(5, 7) + "월",
+          // "26-03" 처럼 연도를 붙인다. 월만 쓰면 여러 해가 이어질 때
+          // 어느 해의 3월인지 구분이 안 된다.
+          month: key.slice(2),
           total,
           passRatePct: rate === null ? null : Math.round(rate * 100),
           scrapRatePct: total === 0 ? 0 : Math.round((scrap / total) * 100),
@@ -419,11 +421,11 @@ export default function CoatingPage() {
               strokeWidth={2}
               dot={false}
             >
-              {/* 합격률은 높고 폐기율은 낮아 서로 멀지만, 폐기율이 0 근처라
-                  위에 붙이면 x축 눈금과 겹친다. 아래로 내려 피한다. */}
+              {/* 아래로 붙이면 0 근처에서 x축 글자와 겹친다. 위로 올려도
+                  합격률선은 90% 부근이라 서로 부딪히지 않는다. */}
               <LabelList
                 dataKey="scrapRatePct"
-                position="bottom"
+                position="top"
                 fill={labelColor}
                 fontSize={11}
                 formatter={labelPercent}
