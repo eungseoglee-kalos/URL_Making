@@ -23,18 +23,25 @@ param(
 $ErrorActionPreference = "Stop"
 
 # ---- 설정 ---------------------------------------------------------------
-# 서버가 정해지면 $SourceFolder 만 바꾸면 된다 (UNC 경로도 가능: \\서버\공유\...)
-$SourceFolder = "C:\Users\Admin\Downloads\Telegram Desktop"
-$Endpoint     = "https://naju.kbmtt.com/api/ingest"
+$Endpoint = "https://naju.kbmtt.com/api/ingest"
 
-# Pattern 은 와일드카드도 되고 정확한 파일명도 된다. 버전이 올라가는 파일은
-# _V* 로 두어 최신 것을 잡고, 파일명이 고정된 것은 그대로 적는다. 어느 쪽이든
-# 맞는 파일이 없으면 그 항목만 실패로 남고 나머지는 정상 전송된다.
+# Folder 는 파일이 실제로 있는 폴더 (UNC 경로 가능: \\서버\공유\...). Pattern 은
+# 와일드카드도 되고 정확한 파일명도 된다. 버전이 올라가는 파일은 _V* 로 두어
+# 최신 것을 잡는다. 어느 쪽이든 맞는 파일이 없으면 그 항목만 실패로 남고
+# 나머지는 정상 전송된다.
 $Sources = @(
-    @{ Label = "코팅현황";           Pattern = "히터코일검사현황_Ver*.xlsx" }
-    @{ Label = "생산계획 대비 실적"; Pattern = "생산계획대비 실적_V*.xlsx" }
-    @{ Label = "히터코일/메시 출하"; Pattern = "히터코일 출하현황_V*.xlsx" }
-    @{ Label = "진공증착 생산실적";  Pattern = "VM 월별 생산실적 보고_V23.xlsx" }
+    @{ Label = "코팅현황"
+       Folder  = "\\10.10.10.251\나주공장 공용폴더\발열체\코팅작업검사현황"
+       Pattern = "히터코일검사현황_Ver*.xlsx" }
+    @{ Label = "생산계획 대비 실적"
+       Folder  = "\\10.10.10.251\나주공장\3.생산관리\생산관리 보고파일"
+       Pattern = "생산계획대비 실적_V*.xlsx" }
+    @{ Label = "히터코일/메시 출하"
+       Folder  = "\\10.10.10.251\나주공장\3.생산관리\생산관리 보고파일"
+       Pattern = "히터코일 출하현황_V*.xlsx" }
+    @{ Label = "진공증착 생산실적"
+       Folder  = "\\10.10.10.251\나주공장\3.생산관리\생산관리 보고파일"
+       Pattern = "VM 월별 생산실적 보고_V*.xlsx" }
 )
 # -------------------------------------------------------------------------
 
@@ -103,9 +110,11 @@ function Send-File {
 # ---- 실행 ---------------------------------------------------------------
 Write-Log "=== 시작 ($(if ($DryRun) { 'DryRun' } else { '실전송' })) ==="
 
-if (-not (Test-Path $SourceFolder)) {
-    Write-Log "[실패] 폴더를 찾을 수 없습니다: $SourceFolder"
-    exit 1
+# 폴더별로 한 번만 확인한다 (같은 폴더를 쓰는 항목이 여러 개라도 중복 검사 안 함).
+foreach ($folder in ($Sources.Folder | Select-Object -Unique)) {
+    if (-not (Test-Path $folder)) {
+        Write-Log "[경고] 폴더에 접근할 수 없습니다: $folder (네트워크 연결/권한 확인 필요)"
+    }
 }
 
 $token = $null
@@ -114,7 +123,7 @@ if (-not $DryRun) { $token = Get-Token }
 $failed = 0
 
 foreach ($src in $Sources) {
-    $file = Find-Latest -Folder $SourceFolder -Pattern $src.Pattern
+    $file = Find-Latest -Folder $src.Folder -Pattern $src.Pattern
 
     if (-not $file) {
         Write-Log "[실패] $($src.Label): '$($src.Pattern)' 에 맞는 파일이 없습니다."
