@@ -37,14 +37,23 @@ https://supabase.com/dashboard/project/ctmetyjsfoebkbzkeqif/sql/new
 
 ## RLS 규칙
 
-데이터 테이블은 전부 같은 형태입니다.
+데이터 테이블은 전부 같은 형태입니다 (`harden_rls.sql` 적용 이후).
 
 - RLS 켜짐. **anon 키로는 아무것도 보이지 않습니다.**
-- `authenticated` 에게 `select` / `insert` / `delete` 허용.
+- `authenticated` 에게 `select` 만 허용하고, **그중에서도 `profiles.is_approved`
+  (또는 `is_admin`) 인 회원만** 실제로 행을 볼 수 있습니다 (`is_approved_user()`
+  헬퍼).
+- `insert` / `delete` 정책은 두지 않습니다. 실제 쓰기는 전부 서비스 롤 키로만
+  하므로(아래), 로그인 세션에게 쓰기를 열어둘 이유가 없습니다.
 
-관리자만 업로드할 수 있게 막는 것은 DB 가 아니라 애플리케이션이 합니다 —
+과거에는 `authenticated` 이면 승인 여부와 무관하게 전부 읽고 쓸 수 있었습니다
+— 화면의 "관리자 승인 대기"는 애플리케이션에서만 확인했을 뿐, anon 키를 아는
+누구나(브라우저에서 항상 볼 수 있는 값입니다) REST API로 직접 모든 표를
+읽거나 지울 수 있었습니다. `harden_rls.sql` 이 이 구멍을 막습니다.
+
+관리자만 업로드할 수 있게 막는 것은 여전히 애플리케이션이 합니다 —
 `app/admin/actions.ts` 의 `requireAdmin()`, 그리고 `app/api/ingest/route.ts` 의
-`INGEST_TOKEN` 검사입니다.
+`INGEST_TOKEN` 검사입니다. DB 쪽 정책은 "승인된 회원만 읽기"까지만 보장합니다.
 
 자동 취합은 RLS 를 우회하는 서비스 롤 키를 쓰므로(`lib/supabase/admin.ts`),
 토큰 검사를 통과하기 전에는 어떤 DB 작업도 하지 않습니다.
