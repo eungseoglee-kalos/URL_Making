@@ -34,9 +34,10 @@ type ShipmentRecord = {
 
 const SELECT_COLUMNS = "ship_date, part_number, quantity, category, vendor";
 
-// 실적이 아니라 아직 나가지 않은 물량. '예상'은 수주만 잡힌 분, '세정출하'는
-// 세정을 보내놓고 아직 납품되지 않은 분이라 둘 다 수주잔량으로 센다.
-const BACKLOG_VENDORS = new Set(["예상", "세정출하"]);
+// 실적이 아니라 아직 나가지 않은 물량. '예상'만 수주만 잡히고 아직 나가지
+// 않은 분이라 수주잔량으로 센다. '세정출하'는 세정 협력사를 거쳐 나가는
+// 정식 출하 경로라 ICT/KBM/PSNT와 같은 출하량으로 센다.
+const BACKLOG_VENDORS = new Set(["예상"]);
 
 const CATEGORY_DEV = "개발";
 const CATEGORY_MASS = "양산";

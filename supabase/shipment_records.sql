@@ -6,9 +6,9 @@
 -- 보이지 않습니다. 관리자만 업로드하도록 막는 것은 app/admin/actions.ts 의
 -- requireAdmin() 이 담당합니다.
 --
--- vendor 컬럼에는 실제 업체명 외에 '예상'(미출하 수주분)과 히터코일의
--- '세정출하'(세정 보낸 뒤 미납분)가 들어옵니다. 대시보드는 이 둘을 합쳐
--- 수주잔량으로, 나머지를 출하량으로 집계합니다.
+-- vendor 컬럼에는 실제 업체명 외에 '예상'(미출하 수주분)이 들어옵니다.
+-- 대시보드는 '예상'만 수주잔량으로, 나머지(ICT/KBM/PSNT/세정출하 등 실제
+-- 출하 경로)는 전부 출하량으로 집계합니다.
 
 create table if not exists public.heater_coil_shipments (
   id          bigint generated always as identity primary key,
