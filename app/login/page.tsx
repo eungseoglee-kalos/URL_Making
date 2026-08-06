@@ -10,17 +10,14 @@ export default async function LoginPage({
 
   return (
     <div className="flex min-h-screen flex-1">
-      {/* 좁은 화면에서는 사진을 빼고 로그인 폼만 보여준다. 사진 원본 비율이
-          화면보다 훨씬 넓어서(2348x1155), 꽉 채우지 않고 폼처럼 상하 여백을
-          두고 전체가 다 보이게 넣는다. */}
-      <div className="hidden w-1/2 items-center justify-center p-10 md:flex">
+      {/* 좁은 화면에서는 사진을 빼고 로그인 폼만 보여준다. */}
+      <div className="relative hidden w-1/2 md:block">
         <Image
           src="/naju-factory.png"
           alt="나주공장 전경"
-          width={2348}
-          height={1155}
+          fill
           priority
-          className="h-auto max-h-full w-full rounded-lg object-contain"
+          className="object-cover"
         />
       </div>
 
