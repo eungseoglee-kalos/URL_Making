@@ -159,6 +159,23 @@ export async function deleteMember(formData: FormData) {
   const userId = formData.get("user_id") as string;
 
   const admin = createAdminClient();
+
+  // 기본 관리자 계정은 다른 관리자가 지워버리면 아무도 관리자 페이지를
+  // 되돌릴 수 없게 될 수 있어 막아둔다 (setMemberAdmin 의 권한 해제 금지와
+  // 같은 이유).
+  const { data: target } = await admin
+    .from("profiles")
+    .select("email")
+    .eq("id", userId)
+    .single();
+
+  if (isRootAdmin(target?.email)) {
+    redirect(
+      "/admin?adminError=" +
+        encodeURIComponent("기본 관리자 계정은 삭제할 수 없습니다."),
+    );
+  }
+
   const { error } = await admin.auth.admin.deleteUser(userId);
 
   if (error) {

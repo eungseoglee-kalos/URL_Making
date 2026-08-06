@@ -221,15 +221,17 @@ export default async function AdminPage({
                           </button>
                         </form>
                       )}
-                      <form action={deleteMember}>
-                        <input type="hidden" name="user_id" value={p.id} />
-                        <ConfirmSubmitButton
-                          confirmText={`${p.email} 계정을 완전히 삭제하시겠습니까? 되돌릴 수 없습니다.`}
-                          className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 dark:border-red-900 dark:text-red-400"
-                        >
-                          삭제
-                        </ConfirmSubmitButton>
-                      </form>
+                      {!isRootAdmin(p.email) && (
+                        <form action={deleteMember}>
+                          <input type="hidden" name="user_id" value={p.id} />
+                          <ConfirmSubmitButton
+                            confirmText={`${p.email} 계정을 완전히 삭제하시겠습니까? 되돌릴 수 없습니다.`}
+                            className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 dark:border-red-900 dark:text-red-400"
+                          >
+                            삭제
+                          </ConfirmSubmitButton>
+                        </form>
+                      )}
                     </div>
                   </div>
 
