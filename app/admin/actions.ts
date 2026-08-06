@@ -26,6 +26,20 @@ async function requireAdmin() {
   return { supabase, user };
 }
 
+// 관리자를 여러 명 둘 수 있게 되면서, 관리자들이 서로를 지정/해제할 수 있게
+// 열어뒀었다. 그런데 그러면 관리자 두 명이 서로 권한을 뺏고 뺏기는 상황이
+// 생길 수 있어, 이 조작 자체는 기본 관리자만 하도록 좁힌다.
+async function requireRootAdmin() {
+  const { supabase, user } = await requireAdmin();
+  if (!isRootAdmin(user.email)) {
+    redirect(
+      "/admin?adminError=" +
+        encodeURIComponent("관리자 지정/해제는 기본 관리자만 할 수 있습니다."),
+    );
+  }
+  return { supabase, user };
+}
+
 // profiles 쓰기는 전부 서비스 롤로 한다. 세션 클라이언트로 남의 행을 고치려면
 // authenticated 에게 UPDATE 를 열어줘야 하는데, 그러면 아무 회원이나 REST 로
 // 자기 is_admin 을 켤 수 있다.
@@ -46,7 +60,7 @@ export async function approveUser(formData: FormData) {
 }
 
 export async function setMemberAdmin(formData: FormData) {
-  const { user } = await requireAdmin();
+  const { user } = await requireRootAdmin();
   const userId = formData.get("user_id") as string;
   const grant = formData.get("grant") === "1";
 

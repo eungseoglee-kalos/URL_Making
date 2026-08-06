@@ -38,6 +38,7 @@ export default async function AdminPage({
     data: { user },
   } = await supabase.auth.getUser();
   const currentUserId = user?.id ?? null;
+  const viewerIsRootAdmin = isRootAdmin(user?.email);
 
   const { data: profiles } = await supabase
     .from("profiles")
@@ -208,7 +209,9 @@ export default async function AdminPage({
                       )}
                     </span>
                     <div className="flex items-center gap-2">
-                      {!isRootAdmin(p.email) && p.id !== currentUserId && (
+                      {viewerIsRootAdmin &&
+                        !isRootAdmin(p.email) &&
+                        p.id !== currentUserId && (
                         <form action={setMemberAdmin}>
                           <input type="hidden" name="user_id" value={p.id} />
                           <input
