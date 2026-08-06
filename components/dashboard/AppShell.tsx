@@ -14,7 +14,7 @@ export default function AppShell({
     <div className="flex min-h-full flex-1">
       <Sidebar isAdmin={isAdmin} />
       <div className="flex min-h-full flex-1 flex-col">
-        <Topbar email={email} />
+        <Topbar email={email} isAdmin={isAdmin} />
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </div>
     </div>
