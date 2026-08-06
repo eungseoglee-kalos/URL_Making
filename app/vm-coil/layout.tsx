@@ -7,5 +7,5 @@ export default function VmCoilLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <DashboardGate>{children}</DashboardGate>;
+  return <DashboardGate href="/vm-coil">{children}</DashboardGate>;
 }

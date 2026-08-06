@@ -7,5 +7,5 @@ export default function CoatingLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <DashboardGate>{children}</DashboardGate>;
+  return <DashboardGate href="/coating">{children}</DashboardGate>;
 }

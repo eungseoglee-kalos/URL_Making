@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAccess } from "@/lib/access";
 import {
   orderDashboards,
+  filterDashboards,
   DASHBOARD_COLOR_CLASSES,
   type DashboardOrderRow,
 } from "@/lib/dashboards";
@@ -25,14 +26,20 @@ export default async function Home() {
     redirect("/login");
   }
 
-  const { isAdmin, isApproved } = await getAccess(supabase, user);
+  const { isAdmin, isApproved, allowedDashboards } = await getAccess(
+    supabase,
+    user,
+  );
 
   const { data: savedOrder } = await supabase
     .from("dashboard_order")
     .select("href, sort_order")
     .order("sort_order", { ascending: true });
 
-  const dashboards = orderDashboards(savedOrder as DashboardOrderRow[] | null);
+  const dashboards = filterDashboards(
+    orderDashboards(savedOrder as DashboardOrderRow[] | null),
+    allowedDashboards,
+  );
 
   return (
     <AppShell email={user.email} isAdmin={isAdmin}>
@@ -41,6 +48,11 @@ export default async function Home() {
       ) : (
         <div className="flex flex-col gap-4">
           <h1 className="text-lg font-semibold">대시보드 선택</h1>
+          {dashboards.length === 0 && (
+            <p className="text-sm text-foreground/60">
+              열람 가능한 대시보드가 없습니다. 관리자에게 문의해주세요.
+            </p>
+          )}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {dashboards.map((d, i) => (
               <Link

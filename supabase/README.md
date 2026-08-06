@@ -17,8 +17,13 @@ https://supabase.com/dashboard/project/ctmetyjsfoebkbzkeqif/sql/new
 | `shipment_records.sql` | `heater_coil_shipments`, `mesh_shipments` | `/heater-coil`, `/mesh` |
 | `vm_records.sql` | `vm_shipments`, `vm_backlog` | `/vm-coil` |
 | `sync_log.sql` | `sync_log` | 전 대시보드의 "마지막 갱신" 배지, 취합 이력 |
+| `admin_and_dashboard_order.sql` | `profiles.is_admin`, `dashboard_order` | `/admin` (관리자 지정, 대시보드 순서) |
+| `dashboard_access.sql` | `profiles.allowed_dashboards` | `/admin` (사용자별 대시보드 열람 권한) |
+| `harden_rls.sql` | 전체 테이블의 RLS 정책 | 승인된 회원만 읽기, 쓰기는 서비스 롤만 |
 
-`profiles` 는 인증에 딸린 테이블이라 여기서 관리하지 않습니다.
+`profiles` 자체(가입 시 행 생성)는 인증에 딸린 것이라 여기서 만들지 않지만,
+그 위에 얹는 컬럼(`is_admin`, `allowed_dashboards`)과 정책은 위 파일들이
+관리합니다.
 
 ## 전부 멱등입니다
 

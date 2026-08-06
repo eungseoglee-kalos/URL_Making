@@ -3,13 +3,18 @@ import ConfirmSubmitButton from "@/components/dashboard/ConfirmSubmitButton";
 import UploadExcelForm from "@/components/dashboard/UploadExcelForm";
 import { INGEST_TARGETS } from "@/lib/ingest";
 import { isRootAdmin } from "@/lib/access";
-import { orderDashboards, type DashboardOrderRow } from "@/lib/dashboards";
+import {
+  DASHBOARDS,
+  orderDashboards,
+  type DashboardOrderRow,
+} from "@/lib/dashboards";
 import {
   approveUser,
   deleteMember,
   uploadExcel,
   setMemberAdmin,
   moveDashboard,
+  setDashboardAccess,
 } from "./actions";
 
 export const maxDuration = 60;
@@ -182,51 +187,84 @@ export default async function AdminPage({
           </p>
         ) : (
           <ul className="divide-y divide-black/10 dark:divide-white/10">
-            {approved.map((p) => (
-              <li
-                key={p.id}
-                className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm"
-              >
-                <span className="flex items-center gap-2">
-                  <span className="text-foreground/60">{p.email}</span>
-                  {isRootAdmin(p.email) ? (
-                    <span className="rounded-full bg-foreground px-2 py-0.5 text-[11px] font-medium text-background">
-                      기본 관리자
+            {approved.map((p) => {
+              const isAdminAccount = isRootAdmin(p.email) || p.is_admin;
+              const allowed = p.allowed_dashboards as string[] | null;
+              return (
+                <li key={p.id} className="flex flex-col gap-2 px-4 py-3 text-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="flex items-center gap-2">
+                      <span className="text-foreground/60">{p.email}</span>
+                      {isRootAdmin(p.email) ? (
+                        <span className="rounded-full bg-foreground px-2 py-0.5 text-[11px] font-medium text-background">
+                          기본 관리자
+                        </span>
+                      ) : (
+                        p.is_admin && (
+                          <span className="rounded-full border border-foreground/30 px-2 py-0.5 text-[11px] font-medium">
+                            관리자
+                          </span>
+                        )
+                      )}
                     </span>
-                  ) : (
-                    p.is_admin && (
-                      <span className="rounded-full border border-foreground/30 px-2 py-0.5 text-[11px] font-medium">
-                        관리자
-                      </span>
-                    )
-                  )}
-                </span>
-                <div className="flex items-center gap-2">
-                  {!isRootAdmin(p.email) && p.id !== currentUserId && (
-                    <form action={setMemberAdmin}>
+                    <div className="flex items-center gap-2">
+                      {!isRootAdmin(p.email) && p.id !== currentUserId && (
+                        <form action={setMemberAdmin}>
+                          <input type="hidden" name="user_id" value={p.id} />
+                          <input
+                            type="hidden"
+                            name="grant"
+                            value={p.is_admin ? "0" : "1"}
+                          />
+                          <button className="rounded-md border border-black/10 px-3 py-1.5 text-xs font-medium dark:border-white/10">
+                            {p.is_admin ? "관리자 해제" : "관리자 지정"}
+                          </button>
+                        </form>
+                      )}
+                      <form action={deleteMember}>
+                        <input type="hidden" name="user_id" value={p.id} />
+                        <ConfirmSubmitButton
+                          confirmText={`${p.email} 계정을 완전히 삭제하시겠습니까? 되돌릴 수 없습니다.`}
+                          className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 dark:border-red-900 dark:text-red-400"
+                        >
+                          삭제
+                        </ConfirmSubmitButton>
+                      </form>
+                    </div>
+                  </div>
+
+                  {/* 관리자는 항상 전체 대시보드를 보므로 설정할 게 없다. */}
+                  {!isAdminAccount && (
+                    <form
+                      action={setDashboardAccess}
+                      className="flex flex-wrap items-center gap-3 rounded-md border border-black/10 px-3 py-2 text-xs dark:border-white/10"
+                    >
                       <input type="hidden" name="user_id" value={p.id} />
-                      <input
-                        type="hidden"
-                        name="grant"
-                        value={p.is_admin ? "0" : "1"}
-                      />
-                      <button className="rounded-md border border-black/10 px-3 py-1.5 text-xs font-medium dark:border-white/10">
-                        {p.is_admin ? "관리자 해제" : "관리자 지정"}
+                      <span className="text-foreground/50">열람 가능:</span>
+                      {DASHBOARDS.map((d) => (
+                        <label
+                          key={d.href}
+                          className="flex items-center gap-1.5"
+                        >
+                          <input
+                            type="checkbox"
+                            name="dashboards"
+                            value={d.href}
+                            defaultChecked={
+                              allowed === null || allowed.includes(d.href)
+                            }
+                          />
+                          {d.title}
+                        </label>
+                      ))}
+                      <button className="ml-auto rounded-md border border-black/10 px-2.5 py-1 font-medium dark:border-white/10">
+                        저장
                       </button>
                     </form>
                   )}
-                  <form action={deleteMember}>
-                    <input type="hidden" name="user_id" value={p.id} />
-                    <ConfirmSubmitButton
-                      confirmText={`${p.email} 계정을 완전히 삭제하시겠습니까? 되돌릴 수 없습니다.`}
-                      className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 dark:border-red-900 dark:text-red-400"
-                    >
-                      삭제
-                    </ConfirmSubmitButton>
-                  </form>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

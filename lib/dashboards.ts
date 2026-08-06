@@ -50,6 +50,19 @@ export const DASHBOARD_COLOR_CLASSES = [
 
 export type DashboardOrderRow = { href: string; sort_order: number };
 
+/** allowed 가 null 이면 전부 열람 가능. 관리자 페이지에서 사용자별로 설정한다. */
+export function canAccessDashboard(href: string, allowed: string[] | null) {
+  return allowed === null || allowed.includes(href);
+}
+
+export function filterDashboards(
+  dashboards: DashboardEntry[],
+  allowed: string[] | null,
+): DashboardEntry[] {
+  if (allowed === null) return dashboards;
+  return dashboards.filter((d) => allowed.includes(d.href));
+}
+
 /**
  * 저장된 순서를 카탈로그에 입힌다. 저장된 값이 없는 항목(코드에 새로 추가된
  * 대시보드)은 코드 순서를 유지한 채 뒤에 붙는다. 반대로 DB 에만 있고 코드에서

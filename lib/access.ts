@@ -9,11 +9,16 @@ export function isRootAdmin(email: string | null | undefined) {
   return !!email && email === process.env.ADMIN_EMAIL;
 }
 
-export type Access = { isAdmin: boolean; isApproved: boolean };
+export type Access = {
+  isAdmin: boolean;
+  isApproved: boolean;
+  /** null = 전부 열람 가능. 배열이면 그 href 목록만 열람 가능. */
+  allowedDashboards: string[] | null;
+};
 
 /**
  * 로그인한 사용자의 권한을 한 번의 조회로 판정한다. 관리자는 승인 여부와
- * 무관하게 승인된 것으로 본다.
+ * 무관하게 승인된 것으로 보고, 대시보드 열람 제한도 받지 않는다.
  */
 export async function getAccess(
   supabase: SupabaseClient,
@@ -29,5 +34,9 @@ export async function getAccess(
     .single();
 
   const isAdmin = isRootAdmin(user.email) || data?.is_admin === true;
-  return { isAdmin, isApproved: isAdmin || data?.is_approved === true };
+  return {
+    isAdmin,
+    isApproved: isAdmin || data?.is_approved === true,
+    allowedDashboards: isAdmin ? null : data?.allowed_dashboards ?? null,
+  };
 }

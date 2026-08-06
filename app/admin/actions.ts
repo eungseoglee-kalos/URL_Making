@@ -6,7 +6,11 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ingestWorkbook, IngestError } from "@/lib/ingest";
 import { getAccess, isRootAdmin } from "@/lib/access";
-import { orderDashboards, type DashboardOrderRow } from "@/lib/dashboards";
+import {
+  DASHBOARDS,
+  orderDashboards,
+  type DashboardOrderRow,
+} from "@/lib/dashboards";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -80,6 +84,34 @@ export async function setMemberAdmin(formData: FormData) {
       encodeURIComponent(
         `${target?.email ?? "계정"} 을(를) ${grant ? "관리자로 지정" : "일반 사용자로 변경"}했습니다.`,
       ),
+  );
+}
+
+/**
+ * 체크된 항목이 전체 대시보드와 같으면 제한 없음(null)으로 저장한다. 그래야
+ * 나중에 대시보드가 추가돼도 "전체 허용"인 사용자는 자동으로 새 항목까지
+ * 보게 된다 -- 매번 모든 사용자 행을 갱신할 필요가 없다.
+ */
+export async function setDashboardAccess(formData: FormData) {
+  await requireAdmin();
+  const userId = formData.get("user_id") as string;
+  const selected = formData.getAll("dashboards") as string[];
+  const allowed = selected.length >= DASHBOARDS.length ? null : selected;
+
+  const { error } = await createAdminClient()
+    .from("profiles")
+    .update({ allowed_dashboards: allowed })
+    .eq("id", userId);
+
+  if (error) {
+    redirect("/admin?adminError=" + encodeURIComponent(error.message));
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/");
+  redirect(
+    "/admin?adminMessage=" +
+      encodeURIComponent("대시보드 열람 권한을 저장했습니다."),
   );
 }
 

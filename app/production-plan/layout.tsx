@@ -7,5 +7,5 @@ export default function ProductionPlanLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <DashboardGate>{children}</DashboardGate>;
+  return <DashboardGate href="/production-plan">{children}</DashboardGate>;
 }

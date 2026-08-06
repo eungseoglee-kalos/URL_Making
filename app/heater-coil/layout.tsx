@@ -7,5 +7,5 @@ export default function HeaterCoilLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <DashboardGate>{children}</DashboardGate>;
+  return <DashboardGate href="/heater-coil">{children}</DashboardGate>;
 }

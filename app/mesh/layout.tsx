@@ -7,5 +7,5 @@ export default function MeshLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <DashboardGate>{children}</DashboardGate>;
+  return <DashboardGate href="/mesh">{children}</DashboardGate>;
 }
